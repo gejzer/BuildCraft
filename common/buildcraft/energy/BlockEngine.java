@@ -108,10 +108,11 @@ public class BlockEngine extends BlockContainer {
 	}
 
 	@Override
-	public void updateBlockMetadata(World world, int x, int y, int z, int par5,	float par6, float par7, float par8) {
+	public int func_85104_a(World world, int x, int y, int z, int par5,	float par6, float par7, float par8, int par9) {
 		TileEngine tile = (TileEngine) world.getBlockTileEntity(x, y, z);
-		tile.orientation = Orientations.YPos.ordinal();
-		tile.switchOrientation();
+		//tile.orientation = Orientations.YPos.ordinal();
+		//tile.switchOrientation();
+		return par9;
 	}
 
 	@Override

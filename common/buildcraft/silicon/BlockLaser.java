@@ -73,13 +73,13 @@ public class BlockLaser extends BlockContainer {
 
 
 	@Override
-	public void updateBlockMetadata(World world, int x, int y, int z, int par5,	float par6, float par7, float par8) {
-		super.updateBlockMetadata(world, x, y, z, par5, par6, par7, par8);
+	public int func_85104_a (World world, int x, int y, int z, int par5,	float par6, float par7, float par8, int par9) {
+		super.func_85104_a (world, x, y, z, par5, par6, par7, par8, par9);
 		int i1 = world.getBlockMetadata(x, y, z);
 		if (par5 <= 6) {
 			i1 = par5;
 		}
-		world.setBlockMetadataWithNotify(x, y, z, i1);
+		return i1;
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })

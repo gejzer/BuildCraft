@@ -330,13 +330,13 @@ public class BlockGenericPipe extends BlockContainer {
 
 
 	@Override
-	public void updateBlockMetadata(World world, int x, int y, int z, int par5,	float par6, float par7, float par8) {
-		super.updateBlockMetadata(world, x, y, z, par5, par6, par7, par8);
+	public int func_85104_a(World world, int x, int y, int z, int par5,	float par6, float par7, float par8, int par9) {
+		super.func_85104_a(world, x, y, z, par5, par6, par7, par8, par9);
 		Pipe pipe = getPipe(world, x, y, z);
 
 		if (isValid(pipe))
 			pipe.onBlockPlaced();
-
+		return par9;
 	}
 
 	@Override

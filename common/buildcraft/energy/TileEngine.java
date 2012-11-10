@@ -54,7 +54,7 @@ public class TileEngine extends TileBuildCraft implements IPowerReceptor, IInven
 
 	boolean lastPower = false;
 
-	public int orientation;
+	public int orientation = Orientations.YPos.ordinal();
 
 	IPowerProvider provider;
 
@@ -369,7 +369,7 @@ public class TileEngine extends TileBuildCraft implements IPowerReceptor, IInven
 		engine.addEnergy(provider.useEnergy(1, engine.maxEnergyReceived(), true) * 0.95F);
 	}
 
-	public boolean isPoweredTile(TileEntity tile) {
+	public static boolean isPoweredTile(TileEntity tile) {
 		if (tile instanceof IPowerReceptor) {
 			IPowerReceptor receptor = (IPowerReceptor) tile;
 			IPowerProvider provider = receptor.getPowerProvider();
