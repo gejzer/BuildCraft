@@ -11,13 +11,13 @@ package buildcraft.transport;
 
 import buildcraft.BuildCraftCore;
 import net.minecraftforge.common.ForgeDirection;
+import net.minecraftforge.liquids.ILiquidTank;
+import net.minecraftforge.liquids.ITankContainer;
+import net.minecraftforge.liquids.LiquidContainerRegistry;
+import net.minecraftforge.liquids.LiquidStack;
+import net.minecraftforge.liquids.LiquidTank;
 import buildcraft.api.core.SafeTimeTracker;
 import buildcraft.api.gates.ITrigger;
-import buildcraft.api.liquids.ILiquidTank;
-import buildcraft.api.liquids.ITankContainer;
-import buildcraft.api.liquids.LiquidManager;
-import buildcraft.api.liquids.LiquidStack;
-import buildcraft.api.liquids.LiquidTank;
 import buildcraft.api.transport.IPipeEntry;
 import buildcraft.core.DefaultProps;
 import buildcraft.core.IMachine;
@@ -126,7 +126,7 @@ public class PipeTransportLiquids extends PipeTransport implements ITankContaine
 	 * The amount of liquid contained by a pipe section. For simplicity, all
 	 * pipe sections are assumed to be of the same volume.
 	 */
-	public static int LIQUID_IN_PIPE = LiquidManager.BUCKET_VOLUME / 4;
+	public static int LIQUID_IN_PIPE = LiquidContainerRegistry.BUCKET_VOLUME / 4;
 	public static short INPUT_TTL = 60;	//100
 	public static short OUTPUT_TTL = 80;	//80
 	public static short OUTPUT_COOLDOWN = 30;	//30
@@ -406,7 +406,7 @@ public class PipeTransportLiquids extends PipeTransport implements ITankContaine
 		if (tile instanceof ITankContainer) {
 			ITankContainer liq = (ITankContainer) tile;
 
-			if (liq.getTanks() != null && liq.getTanks().length > 0)
+			if (liq.getTanks(ForgeDirection.UNKNOWN) != null && liq.getTanks(ForgeDirection.UNKNOWN).length > 0)
 				return true;
 		}
 
@@ -460,8 +460,13 @@ public class PipeTransportLiquids extends PipeTransport implements ITankContaine
 	}
 
 	@Override
-	public ILiquidTank[] getTanks() {
+	public ILiquidTank[] getTanks(ForgeDirection direction) {
 		return internalTanks;
 	}
 
+	@Override
+	public ILiquidTank getTank(ForgeDirection direction, LiquidStack type) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

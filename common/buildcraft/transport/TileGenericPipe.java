@@ -20,13 +20,13 @@ import cpw.mods.fml.common.asm.SideOnly;
 import buildcraft.BuildCraftCore;
 import buildcraft.BuildCraftTransport;
 import net.minecraftforge.common.ForgeDirection;
+import net.minecraftforge.liquids.ILiquidTank;
+import net.minecraftforge.liquids.ITankContainer;
+import net.minecraftforge.liquids.LiquidStack;
 import buildcraft.api.core.Position;
 import buildcraft.api.core.SafeTimeTracker;
 import buildcraft.api.gates.IOverrideDefaultTriggers;
 import buildcraft.api.gates.ITrigger;
-import buildcraft.api.liquids.ILiquidTank;
-import buildcraft.api.liquids.ITankContainer;
-import buildcraft.api.liquids.LiquidStack;
 import buildcraft.api.power.IPowerProvider;
 import buildcraft.api.power.IPowerReceptor;
 import buildcraft.api.transport.IPipe;
@@ -546,9 +546,9 @@ public class TileGenericPipe extends TileEntity implements IPowerReceptor, ITank
 	}
 
 	@Override
-	public ILiquidTank[] getTanks() {
+	public ILiquidTank[] getTanks(ForgeDirection direction) {
 		if (BlockGenericPipe.isValid(pipe) && pipe.transport instanceof ITankContainer)
-			return ((ITankContainer) pipe.transport).getTanks();
+			return ((ITankContainer) pipe.transport).getTanks(direction);
 		else
 			return null;
 	}
@@ -628,5 +628,13 @@ public class TileGenericPipe extends TileEntity implements IPowerReceptor, ITank
 	@SideOnly(Side.CLIENT)
 	public double func_82115_m() {
 		return 24 * 24;
+	}
+
+	@Override
+	public ILiquidTank getTank(ForgeDirection direction, LiquidStack type) {
+		if (BlockGenericPipe.isValid(pipe) && pipe.transport instanceof ITankContainer)
+			return ((ITankContainer) pipe.transport).getTank(direction, type);
+		else
+			return null;
 	}
 }

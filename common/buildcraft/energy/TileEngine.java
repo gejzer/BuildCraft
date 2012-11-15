@@ -14,12 +14,13 @@ import java.util.LinkedList;
 import buildcraft.BuildCraftCore;
 import buildcraft.BuildCraftEnergy;
 import net.minecraftforge.common.ForgeDirection;
+import net.minecraftforge.liquids.ILiquidTank;
+import net.minecraftforge.liquids.ITankContainer;
+import net.minecraftforge.liquids.LiquidStack;
+import net.minecraftforge.liquids.LiquidTank;
 import buildcraft.api.core.Position;
 import buildcraft.api.gates.IOverrideDefaultTriggers;
 import buildcraft.api.gates.ITrigger;
-import buildcraft.api.liquids.ITankContainer;
-import buildcraft.api.liquids.LiquidStack;
-import buildcraft.api.liquids.LiquidTank;
 import buildcraft.api.power.IPowerProvider;
 import buildcraft.api.power.IPowerReceptor;
 import buildcraft.api.power.PowerFramework;
@@ -468,12 +469,13 @@ public class TileEngine extends TileBuildCraft implements IPowerReceptor, IInven
 	}
 
 	@Override
-	public LiquidTank[] getTanks() {
+	public LiquidTank[] getTanks(ForgeDirection direction) {
 		if (engine == null) {
 			return new LiquidTank[0];
 		} else {
 			return engine.getLiquidSlots();
 		}
 	}
+	@Override public ILiquidTank getTank(ForgeDirection direction, LiquidStack type) { return null; }
 
 }
