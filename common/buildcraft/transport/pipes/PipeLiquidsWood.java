@@ -9,10 +9,10 @@
 package buildcraft.transport.pipes;
 
 import net.minecraftforge.common.ForgeDirection;
+import net.minecraftforge.liquids.ITankContainer;
+import net.minecraftforge.liquids.LiquidContainerRegistry;
+import net.minecraftforge.liquids.LiquidStack;
 import buildcraft.api.core.Position;
-import buildcraft.api.liquids.ITankContainer;
-import buildcraft.api.liquids.LiquidManager;
-import buildcraft.api.liquids.LiquidStack;
 import buildcraft.api.power.IPowerProvider;
 import buildcraft.api.power.IPowerReceptor;
 import buildcraft.api.power.PowerFramework;
@@ -68,8 +68,8 @@ public class PipeLiquidsWood extends Pipe implements IPowerReceptor {
          if (!PipeManager.canExtractLiquids(this, w, (int) pos.x, (int) pos.y, (int) pos.z))
             return;
 
-         if (liquidToExtract <= LiquidManager.BUCKET_VOLUME)
-            liquidToExtract += powerProvider.useEnergy(1, 1, true) * LiquidManager.BUCKET_VOLUME;
+         if (liquidToExtract <= LiquidContainerRegistry.BUCKET_VOLUME)
+            liquidToExtract += powerProvider.useEnergy(1, 1, true) * LiquidContainerRegistry.BUCKET_VOLUME;
       }
 	}
 

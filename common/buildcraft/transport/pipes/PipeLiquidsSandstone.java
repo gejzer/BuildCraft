@@ -10,7 +10,7 @@
 package buildcraft.transport.pipes;
 
 import net.minecraftforge.common.ForgeDirection;
-import buildcraft.api.liquids.LiquidStack;
+import net.minecraftforge.liquids.LiquidStack;
 import buildcraft.core.DefaultProps;
 import buildcraft.transport.IPipeTransportLiquidsHook;
 import buildcraft.transport.Pipe;
@@ -41,6 +41,6 @@ public class PipeLiquidsSandstone extends Pipe implements IPipeTransportLiquidsH
 		if (!(container.tileBuffer[from.ordinal()].getTile() instanceof TileGenericPipe)) 
 			return 0;
 		
-		return ((PipeTransportLiquids)this.transport).getTanks()[from.ordinal()].fill(resource, doFill);
+		return ((PipeTransportLiquids)this.transport).getTanks(ForgeDirection.UNKNOWN)[from.ordinal()].fill(resource, doFill);
 	}
 }

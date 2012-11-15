@@ -10,12 +10,12 @@ package buildcraft.factory;
 
 import buildcraft.BuildCraftCore;
 import net.minecraftforge.common.ForgeDirection;
+import net.minecraftforge.liquids.ILiquidTank;
+import net.minecraftforge.liquids.ITankContainer;
+import net.minecraftforge.liquids.LiquidContainerRegistry;
+import net.minecraftforge.liquids.LiquidStack;
+import net.minecraftforge.liquids.LiquidTank;
 import buildcraft.api.core.SafeTimeTracker;
-import buildcraft.api.liquids.ILiquidTank;
-import buildcraft.api.liquids.ITankContainer;
-import buildcraft.api.liquids.LiquidManager;
-import buildcraft.api.liquids.LiquidStack;
-import buildcraft.api.liquids.LiquidTank;
 import buildcraft.core.TileBuildCraft;
 import buildcraft.core.network.PacketPayload;
 import buildcraft.core.network.PacketUpdate;
@@ -26,7 +26,7 @@ import net.minecraft.src.TileEntity;
 public class TileTank extends TileBuildCraft implements ITankContainer
 {
 
-    public final ILiquidTank tank = new LiquidTank(LiquidManager.BUCKET_VOLUME * 16);
+    public final LiquidTank tank = new LiquidTank(LiquidContainerRegistry.BUCKET_VOLUME * 16);
     public boolean hasUpdate = false;
     public SafeTimeTracker tracker = new SafeTimeTracker();
 
@@ -82,14 +82,14 @@ public class TileTank extends TileBuildCraft implements ITankContainer
     public void readFromNBT(NBTTagCompound data)
     {
         super.readFromNBT(data);
-        
+
         if(data.hasKey("stored") && data.hasKey("liquidId"))
         {
 	        LiquidStack liquid = new LiquidStack(data.getInteger("liquidId"), data.getInteger("stored"), 0);
 	        tank.setLiquid(liquid);
         }
         else
-        {        
+        {
 	        LiquidStack liquid = new LiquidStack(0, 0, 0);
 	        liquid.readFromNBT(data.getCompoundTag("tank"));
 	        tank.setLiquid(liquid);
@@ -223,9 +223,9 @@ public class TileTank extends TileBuildCraft implements ITankContainer
     }
 
     @Override
-    public ILiquidTank[] getTanks()
+    public ILiquidTank[] getTanks(ForgeDirection direction)
     {
-        ILiquidTank compositeTank = new LiquidTank(tank.getCapacity());
+        LiquidTank compositeTank = new LiquidTank(tank.getCapacity());
 
         TileTank tile = getBottomTank();
 
@@ -252,5 +252,11 @@ public class TileTank extends TileBuildCraft implements ITankContainer
 
         compositeTank.setCapacity(capacity);
         return new ILiquidTank[]{compositeTank};
+    }
+
+    @Override
+    public ILiquidTank getTank(ForgeDirection direction, LiquidStack type) {
+    	// TODO Auto-generated method stub
+    	return null;
     }
 }
