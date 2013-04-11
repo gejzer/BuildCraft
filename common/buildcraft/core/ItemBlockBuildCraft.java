@@ -1,8 +1,8 @@
 package buildcraft.core;
 
+import net.minecraft.item.ItemBlock;
+import net.minecraft.item.ItemStack;
 import buildcraft.core.utils.StringUtil;
-import net.minecraft.src.ItemBlock;
-import net.minecraft.src.ItemStack;
 
 public class ItemBlockBuildCraft extends ItemBlock {
 
@@ -20,7 +20,7 @@ public class ItemBlockBuildCraft extends ItemBlock {
 
 	@Override
 	public String getItemDisplayName(ItemStack itemstack) {
-		return StringUtil.localize(getItemNameIS(itemstack));
+		return StringUtil.localize(getUnlocalizedName(itemstack));
 	}
 
 }

@@ -1,12 +1,14 @@
 package buildcraft.energy.gui;
 
-import buildcraft.core.DefaultProps;
+import net.minecraft.client.Minecraft;
+import net.minecraft.inventory.IInventory;
+import buildcraft.BuildCraftCore;
+import buildcraft.core.CoreIconProvider;
 import buildcraft.core.gui.BuildCraftContainer;
 import buildcraft.core.gui.GuiBuildCraft;
 import buildcraft.core.utils.StringUtil;
 import buildcraft.energy.Engine;
 import buildcraft.energy.TileEngine;
-import net.minecraft.src.IInventory;
 
 public abstract class GuiEngine extends GuiBuildCraft {
 
@@ -30,7 +32,8 @@ public abstract class GuiEngine extends GuiBuildCraft {
 			drawBackground(x, y);
 
 			// Draw icon
-			drawIcon(DefaultProps.TEXTURE_ICONS, 0, x + 3, y + 4);
+			Minecraft.getMinecraft().renderEngine.bindTexture("/gui/items.png");
+			drawIcon(BuildCraftCore.iconProvider.getIcon(CoreIconProvider.ENERGY), x + 3, y + 4);
 
 			if (!isFullyOpened())
 				return;

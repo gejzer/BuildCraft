@@ -1,10 +1,11 @@
 package buildcraft.core.render;
 
+import net.minecraft.block.Block;
+import net.minecraft.client.renderer.RenderBlocks;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.util.Icon;
+import net.minecraft.world.IBlockAccess;
 import buildcraft.BuildCraftCore;
-import net.minecraft.src.Block;
-import net.minecraft.src.IBlockAccess;
-import net.minecraft.src.RenderBlocks;
-import net.minecraft.src.Tessellator;
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
 
 public class RenderingMarkers implements ISimpleBlockRenderingHandler {
@@ -14,25 +15,32 @@ public class RenderingMarkers implements ISimpleBlockRenderingHandler {
 	}
 
 	@Override
-	public void renderInventoryBlock(Block block, int metadata, int modelID,
-			RenderBlocks renderer) {}
+	public void renderInventoryBlock(Block block, int metadata, int modelID, RenderBlocks renderer) {
+	}
 
 	@Override
-	public boolean renderWorldBlock(IBlockAccess world, int x, int y, int z,
-			Block block, int modelId, RenderBlocks renderer) {
+	public boolean renderWorldBlock(IBlockAccess world, int x, int y, int z, Block block, int modelId, RenderBlocks renderer) {
 
 		Tessellator tessellator = Tessellator.instance;
 		float f = block.getBlockBrightness(world, x, y, z);
-		if (Block.lightValue[block.blockID] > 0)
+		if (Block.lightValue[block.blockID] > 0) {
 			f = 1.0F;
+		}
 		tessellator.setColorOpaque_F(f, f, f);
 		renderMarkerWithMeta(world, block, x, y, z, world.getBlockMetadata(x, y, z));
 
 		return true;
 	}
 
-	@Override public boolean shouldRender3DInInventory() { return false; }
-	@Override public int getRenderId() { return BuildCraftCore.markerModel; }
+	@Override
+	public boolean shouldRender3DInInventory() {
+		return false;
+	}
+
+	@Override
+	public int getRenderId() {
+		return BuildCraftCore.markerModel;
+	}
 
 	/* PATH MARKER RENDERING */
 	public static double frontX[][][] = new double[6][3][4];
@@ -42,9 +50,11 @@ public class RenderingMarkers implements ISimpleBlockRenderingHandler {
 	public static double[][] safeClone(double[][] d) {
 		double ret[][] = new double[d.length][d[0].length];
 
-		for (int i = 0; i < d.length; ++i)
-			for (int j = 0; j < d[0].length; ++j)
+		for (int i = 0; i < d.length; ++i) {
+			for (int j = 0; j < d[0].length; ++j) {
 				ret[i][j] = d[i][j];
+			}
+		}
 
 		return ret;
 	}
@@ -107,105 +117,97 @@ public class RenderingMarkers implements ISimpleBlockRenderingHandler {
 		int yCoord = (int) y;
 		int zCoord = (int) z;
 
-		int i = block.getBlockTexture(iblockaccess, xCoord, yCoord, zCoord, 1);
+		Icon i = block.getBlockTexture(iblockaccess, xCoord, yCoord, zCoord, 1);
 
 		int m = meta;
-		int j = (i & 0xf) << 4;
-		int k = i & 0xf0;
-		float f = j / 256F;
-		float f1 = (j + 15.99F) / 256F;
-		float f2 = k / 256F;
-		float f3 = (k + 15.99F) / 256F;
-		double d5 = f + 0.02734375D;
-		double d6 = f2 + 0.0234375D;
-		double d7 = f + 0.02734375D;
-		double d8 = f2 + 0.0234375D;
 		x += 0.5D;
 		z += 0.5D;
+		
+		double minU = (double)i.getInterpolatedU(7);
+		double minV = (double)i.getInterpolatedV(7);
+		double maxU = (double)i.getInterpolatedU(9);
+		double maxV = (double)i.getInterpolatedV(9);
+		
 
 		tessellator.setBrightness(block.getMixedBrightnessForBlock(iblockaccess, xCoord, yCoord, zCoord));
 
-		double s = 0.0625D;
-
+		double s = 1F / 16F;
+		
 		if (meta == 5) {
-			tessellator.addVertexWithUV(x - s, y + 0.5 + s, z - s, d5, d6);
-			tessellator.addVertexWithUV(x - s, y + 0.5 + s, z + s, d5, d8);
-			tessellator.addVertexWithUV(x + s, y + 0.5 + s, z + s, d7, d8);
-			tessellator.addVertexWithUV(x + s, y + 0.5 + s, z - s, d7, d6);
+			tessellator.addVertexWithUV(x - s, y + 0.5 + s, z - s, minU, minV);
+			tessellator.addVertexWithUV(x - s, y + 0.5 + s, z + s, minU, maxV);
+			tessellator.addVertexWithUV(x + s, y + 0.5 + s, z + s, maxU, maxV);
+			tessellator.addVertexWithUV(x + s, y + 0.5 + s, z - s, maxU, minV);
 		} else if (meta == 0) {
-			tessellator.addVertexWithUV(x + s, y + 0.5 - s, z - s, d7, d6);
-			tessellator.addVertexWithUV(x + s, y + 0.5 - s, z + s, d7, d8);
-			tessellator.addVertexWithUV(x - s, y + 0.5 - s, z + s, d5, d8);
-			tessellator.addVertexWithUV(x - s, y + 0.5 - s, z - s, d5, d6);
+			tessellator.addVertexWithUV(x + s, y + 0.5 - s, z - s, maxU, minV);
+			tessellator.addVertexWithUV(x + s, y + 0.5 - s, z + s, maxU, maxV);
+			tessellator.addVertexWithUV(x - s, y + 0.5 - s, z + s, minU, maxV);
+			tessellator.addVertexWithUV(x - s, y + 0.5 - s, z - s, minU, minV);
 		} else if (meta == 2) {
-			tessellator.addVertexWithUV(x - s, y + 0.5 - s, z - s, d5, d6);
-			tessellator.addVertexWithUV(x - s, y + 0.5 - s, z + s, d5, d8);
-			tessellator.addVertexWithUV(x - s, y + 0.5 + s, z + s, d7, d8);
-			tessellator.addVertexWithUV(x - s, y + 0.5 + s, z - s, d7, d6);
+			tessellator.addVertexWithUV(x - s, y + 0.5 - s, z - s, minU, minV);
+			tessellator.addVertexWithUV(x - s, y + 0.5 - s, z + s, minU, maxV);
+			tessellator.addVertexWithUV(x - s, y + 0.5 + s, z + s, maxU, maxV);
+			tessellator.addVertexWithUV(x - s, y + 0.5 + s, z - s, maxU, minV);
 		} else if (meta == 1) {
-			tessellator.addVertexWithUV(x + s, y + 0.5 + s, z - s, d7, d6);
-			tessellator.addVertexWithUV(x + s, y + 0.5 + s, z + s, d7, d8);
-			tessellator.addVertexWithUV(x + s, y + 0.5 - s, z + s, d5, d8);
-			tessellator.addVertexWithUV(x + s, y + 0.5 - s, z - s, d5, d6);
+			tessellator.addVertexWithUV(x + s, y + 0.5 + s, z - s, maxU, minV);
+			tessellator.addVertexWithUV(x + s, y + 0.5 + s, z + s, maxU, maxV);
+			tessellator.addVertexWithUV(x + s, y + 0.5 - s, z + s, minU, maxV);
+			tessellator.addVertexWithUV(x + s, y + 0.5 - s, z - s, minU, minV);
 		} else if (meta == 3) {
-			tessellator.addVertexWithUV(x - s, y + 0.5 - s, z + s, d5, d6);
-			tessellator.addVertexWithUV(x + s, y + 0.5 - s, z + s, d5, d8);
-			tessellator.addVertexWithUV(x + s, y + 0.5 + s, z + s, d7, d8);
-			tessellator.addVertexWithUV(x - s, y + 0.5 + s, z + s, d7, d6);
+			tessellator.addVertexWithUV(x - s, y + 0.5 - s, z + s, minU, minV);
+			tessellator.addVertexWithUV(x + s, y + 0.5 - s, z + s, minU, maxV);
+			tessellator.addVertexWithUV(x + s, y + 0.5 + s, z + s, maxU, maxV);
+			tessellator.addVertexWithUV(x - s, y + 0.5 + s, z + s, maxU, minV);
 		} else if (meta == 4) {
-			tessellator.addVertexWithUV(x - s, y + 0.5 + s, z - s, d7, d6);
-			tessellator.addVertexWithUV(x + s, y + 0.5 + s, z - s, d7, d8);
-			tessellator.addVertexWithUV(x + s, y + 0.5 - s, z - s, d5, d8);
-			tessellator.addVertexWithUV(x - s, y + 0.5 - s, z - s, d5, d6);
+			tessellator.addVertexWithUV(x - s, y + 0.5 + s, z - s, maxU, minV);
+			tessellator.addVertexWithUV(x + s, y + 0.5 + s, z - s, maxU, maxV);
+			tessellator.addVertexWithUV(x + s, y + 0.5 - s, z - s, minU, maxV);
+			tessellator.addVertexWithUV(x - s, y + 0.5 - s, z - s, minU, minV);
 		}
-
+		
 		i = block.getBlockTexture(iblockaccess, xCoord, yCoord, zCoord, 0);
 
-		j = (i & 0xf) << 4;
-		k = i & 0xf0;
-		f = j / 256F;
-		f1 = (j + 15.99F) / 256F;
-		f2 = k / 256F;
-		f3 = (k + 15.99F) / 256F;
-		d5 = f + 0.02734375D;
-		d6 = f2 + 0.0234375D;
-		d7 = f + 0.02734375D;
-		d8 = f2 + 0.0234375D;
+		
+		
+		minU = i.getMinU();
+		maxU = i.getMaxU();
+		minV = i.getMinV();
+		maxV = i.getMaxV();
 
 		if (meta == 5 || meta == 4 || meta == 3 || meta == 0) {
-			tessellator.addVertexWithUV(x + frontX[m][0][0], y + frontX[m][1][0], z + frontX[m][2][0], f, f2);
-			tessellator.addVertexWithUV(x + frontX[m][0][1], y + frontX[m][1][1], z + frontX[m][2][1], f, f3);
-			tessellator.addVertexWithUV(x + frontX[m][0][2], y + frontX[m][1][2], z + frontX[m][2][2], f1, f3);
-			tessellator.addVertexWithUV(x + frontX[m][0][3], y + frontX[m][1][3], z + frontX[m][2][3], f1, f2);
+			tessellator.addVertexWithUV(x + frontX[m][0][0], y + frontX[m][1][0], z + frontX[m][2][0], minU, minV);
+			tessellator.addVertexWithUV(x + frontX[m][0][1], y + frontX[m][1][1], z + frontX[m][2][1], minU, maxV);
+			tessellator.addVertexWithUV(x + frontX[m][0][2], y + frontX[m][1][2], z + frontX[m][2][2], maxU, maxV);
+			tessellator.addVertexWithUV(x + frontX[m][0][3], y + frontX[m][1][3], z + frontX[m][2][3], maxU, minV);
 
-			tessellator.addVertexWithUV(x - frontX[m][0][3], y + frontX[m][1][3], z + frontX[m][2][3], f1, f2);
-			tessellator.addVertexWithUV(x - frontX[m][0][2], y + frontX[m][1][2], z + frontX[m][2][2], f1, f3);
-			tessellator.addVertexWithUV(x - frontX[m][0][1], y + frontX[m][1][1], z + frontX[m][2][1], f, f3);
-			tessellator.addVertexWithUV(x - frontX[m][0][0], y + frontX[m][1][0], z + frontX[m][2][0], f, f2);
+			tessellator.addVertexWithUV(x - frontX[m][0][3], y + frontX[m][1][3], z + frontX[m][2][3], maxU, minV);
+			tessellator.addVertexWithUV(x - frontX[m][0][2], y + frontX[m][1][2], z + frontX[m][2][2], maxU, maxV);
+			tessellator.addVertexWithUV(x - frontX[m][0][1], y + frontX[m][1][1], z + frontX[m][2][1], minU, maxV);
+			tessellator.addVertexWithUV(x - frontX[m][0][0], y + frontX[m][1][0], z + frontX[m][2][0], minU, minV);
 		}
 
 		if (meta == 5 || meta == 2 || meta == 1 || meta == 0) {
-			tessellator.addVertexWithUV(x + frontZ[m][0][0], y + frontZ[m][1][0], z + frontZ[m][2][0], f, f2);
-			tessellator.addVertexWithUV(x + frontZ[m][0][1], y + frontZ[m][1][1], z + frontZ[m][2][1], f, f3);
-			tessellator.addVertexWithUV(x + frontZ[m][0][2], y + frontZ[m][1][2], z + frontZ[m][2][2], f1, f3);
-			tessellator.addVertexWithUV(x + frontZ[m][0][3], y + frontZ[m][1][3], z + frontZ[m][2][3], f1, f2);
+			tessellator.addVertexWithUV(x + frontZ[m][0][0], y + frontZ[m][1][0], z + frontZ[m][2][0], minU, minV);
+			tessellator.addVertexWithUV(x + frontZ[m][0][1], y + frontZ[m][1][1], z + frontZ[m][2][1], minU, maxV);
+			tessellator.addVertexWithUV(x + frontZ[m][0][2], y + frontZ[m][1][2], z + frontZ[m][2][2], maxU, maxV);
+			tessellator.addVertexWithUV(x + frontZ[m][0][3], y + frontZ[m][1][3], z + frontZ[m][2][3], maxU, minV);
 
-			tessellator.addVertexWithUV(x + frontZ[m][0][3], y + frontZ[m][1][3], z - frontZ[m][2][3], f1, f2);
-			tessellator.addVertexWithUV(x + frontZ[m][0][2], y + frontZ[m][1][2], z - frontZ[m][2][2], f1, f3);
-			tessellator.addVertexWithUV(x + frontZ[m][0][1], y + frontZ[m][1][1], z - frontZ[m][2][1], f, f3);
-			tessellator.addVertexWithUV(x + frontZ[m][0][0], y + frontZ[m][1][0], z - frontZ[m][2][0], f, f2);
+			tessellator.addVertexWithUV(x + frontZ[m][0][3], y + frontZ[m][1][3], z - frontZ[m][2][3], maxU, minV);
+			tessellator.addVertexWithUV(x + frontZ[m][0][2], y + frontZ[m][1][2], z - frontZ[m][2][2], maxU, maxV);
+			tessellator.addVertexWithUV(x + frontZ[m][0][1], y + frontZ[m][1][1], z - frontZ[m][2][1], minU, maxV);
+			tessellator.addVertexWithUV(x + frontZ[m][0][0], y + frontZ[m][1][0], z - frontZ[m][2][0], minU, minV);
 		}
 
 		if (meta == 4 || meta == 3 || meta == 2 || meta == 1) {
-			tessellator.addVertexWithUV(x + frontY[m][0][0], y + 0.5 + frontY[m][1][0], z + frontY[m][2][0], f, f2);
-			tessellator.addVertexWithUV(x + frontY[m][0][1], y + 0.5 + frontY[m][1][1], z + frontY[m][2][1], f, f3);
-			tessellator.addVertexWithUV(x + frontY[m][0][2], y + 0.5 + frontY[m][1][2], z + frontY[m][2][2], f1, f3);
-			tessellator.addVertexWithUV(x + frontY[m][0][3], y + 0.5 + frontY[m][1][3], z + frontY[m][2][3], f1, f2);
+			tessellator.addVertexWithUV(x + frontY[m][0][0], y + 0.5 + frontY[m][1][0], z + frontY[m][2][0], minU, minV);
+			tessellator.addVertexWithUV(x + frontY[m][0][1], y + 0.5 + frontY[m][1][1], z + frontY[m][2][1], minU, maxV);
+			tessellator.addVertexWithUV(x + frontY[m][0][2], y + 0.5 + frontY[m][1][2], z + frontY[m][2][2], maxU, maxV);
+			tessellator.addVertexWithUV(x + frontY[m][0][3], y + 0.5 + frontY[m][1][3], z + frontY[m][2][3], maxU, minV);
 
-			tessellator.addVertexWithUV(x + frontY[m][0][3], y + 0.5 - frontY[m][1][3], z + frontY[m][2][3], f1, f2);
-			tessellator.addVertexWithUV(x + frontY[m][0][2], y + 0.5 - frontY[m][1][2], z + frontY[m][2][2], f1, f3);
-			tessellator.addVertexWithUV(x + frontY[m][0][1], y + 0.5 - frontY[m][1][1], z + frontY[m][2][1], f, f3);
-			tessellator.addVertexWithUV(x + frontY[m][0][0], y + 0.5 - frontY[m][1][0], z + frontY[m][2][0], f, f2);
+			tessellator.addVertexWithUV(x + frontY[m][0][3], y + 0.5 - frontY[m][1][3], z + frontY[m][2][3], maxU, minV);
+			tessellator.addVertexWithUV(x + frontY[m][0][2], y + 0.5 - frontY[m][1][2], z + frontY[m][2][2], maxU, maxV);
+			tessellator.addVertexWithUV(x + frontY[m][0][1], y + 0.5 - frontY[m][1][1], z + frontY[m][2][1], minU, maxV);
+			tessellator.addVertexWithUV(x + frontY[m][0][0], y + 0.5 - frontY[m][1][0], z + frontY[m][2][0], minU, minV);
 		}
 	}
 
@@ -218,6 +220,5 @@ public class RenderingMarkers implements ISimpleBlockRenderingHandler {
 			face[j][3] = tmp;
 		}
 	}
-
 
 }

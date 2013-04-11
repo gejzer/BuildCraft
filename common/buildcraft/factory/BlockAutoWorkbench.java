@@ -11,38 +11,37 @@ package buildcraft.factory;
 
 import java.util.ArrayList;
 
-import net.minecraft.src.CreativeTabs;
-import net.minecraft.src.EntityPlayer;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.Material;
-import net.minecraft.src.TileEntity;
-import net.minecraft.src.World;
+import net.minecraft.block.material.Material;
+import net.minecraft.client.renderer.texture.IconRegister;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Icon;
+import net.minecraft.world.World;
 import buildcraft.BuildCraftFactory;
 import buildcraft.core.BlockBuildCraft;
 import buildcraft.core.GuiIds;
 import buildcraft.core.IItemPipe;
 import buildcraft.core.proxy.CoreProxy;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class BlockAutoWorkbench extends BlockBuildCraft {
 
-	int topTexture;
-	int sideTexture;
+	Icon topTexture;
+	Icon sideTexture;
 
 	public BlockAutoWorkbench(int i) {
 		super(i, Material.wood);
-		topTexture = 2 * 16 + 11;
-		sideTexture = 2 * 16 + 12;
 		setHardness(1.0F);
-		setCreativeTab(CreativeTabs.tabDecorations);
 	}
 
 	@Override
-	public int getBlockTextureFromSide(int i) {
-		if (i == 1 || i == 0) {
+	public Icon getIcon(int i, int j) {
+		if (i == 1 || i == 0)
 			return topTexture;
-		} else {
+		else
 			return sideTexture;
-		}
 	}
 
 	@Override
@@ -54,13 +53,13 @@ public class BlockAutoWorkbench extends BlockBuildCraft {
 			return false;
 
 		if (entityplayer.getCurrentEquippedItem() != null) {
-			if (entityplayer.getCurrentEquippedItem().getItem() instanceof IItemPipe) {
+			if (entityplayer.getCurrentEquippedItem().getItem() instanceof IItemPipe)
 				return false;
-			}
 		}
 
-		if (!CoreProxy.proxy.isRenderWorld(world))
+		if (!CoreProxy.proxy.isRenderWorld(world)) {
 			entityplayer.openGui(BuildCraftFactory.instance, GuiIds.AUTO_CRAFTING_TABLE, world, i, j, k);
+		}
 
 		return true;
 	}
@@ -74,5 +73,12 @@ public class BlockAutoWorkbench extends BlockBuildCraft {
 	@Override
 	public void addCreativeItems(ArrayList itemList) {
 		itemList.add(new ItemStack(this));
+	}
+	@Override
+	@SideOnly(Side.CLIENT)
+	public void registerIcons(IconRegister par1IconRegister)
+	{
+	    topTexture = par1IconRegister.registerIcon("buildcraft:autoWorkbench_top");
+	    sideTexture = par1IconRegister.registerIcon("buildcraft:autoWorkbench_side");
 	}
 }

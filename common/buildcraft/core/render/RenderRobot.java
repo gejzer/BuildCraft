@@ -1,10 +1,9 @@
 package buildcraft.core.render;
 
-import net.minecraft.src.Entity;
-import net.minecraft.src.ModelBase;
-import net.minecraft.src.ModelRenderer;
-import net.minecraft.src.Render;
-import net.minecraftforge.client.ForgeHooksClient;
+import net.minecraft.client.model.ModelBase;
+import net.minecraft.client.model.ModelRenderer;
+import net.minecraft.client.renderer.entity.Render;
+import net.minecraft.entity.Entity;
 
 import org.lwjgl.opengl.GL11;
 
@@ -13,7 +12,8 @@ import buildcraft.core.EntityRobot;
 
 public class RenderRobot extends Render {
 
-	protected ModelBase model = new ModelBase() {};
+	protected ModelBase model = new ModelBase() {
+	};
 	private ModelRenderer box;
 
 	public RenderRobot() {
@@ -35,7 +35,7 @@ public class RenderRobot extends Render {
 		GL11.glDisable(2896 /* GL_LIGHTING */);
 		GL11.glTranslated(x, y, z);
 
-		ForgeHooksClient.bindTexture(DefaultProps.TEXTURE_PATH_ENTITIES + "/robot.png", 0);
+		renderManager.renderEngine.bindTexture(DefaultProps.TEXTURE_PATH_ENTITIES + "/robot.png");
 
 		float factor = (float) (1.0 / 16.0);
 

@@ -12,6 +12,9 @@ package buildcraft.core;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.tileentity.TileEntity;
 import buildcraft.api.power.IPowerReceptor;
 import buildcraft.core.network.ISynchronizedTile;
 import buildcraft.core.network.PacketPayload;
@@ -20,9 +23,6 @@ import buildcraft.core.network.PacketUpdate;
 import buildcraft.core.network.TilePacketWrapper;
 import buildcraft.core.proxy.CoreProxy;
 import buildcraft.core.utils.Utils;
-
-import net.minecraft.src.Packet;
-import net.minecraft.src.TileEntity;
 
 public abstract class TileBuildCraft extends TileEntity implements ISynchronizedTile {
 
@@ -37,11 +37,13 @@ public abstract class TileBuildCraft extends TileEntity implements ISynchronized
 	private boolean init = false;
 
 	public TileBuildCraft() {
-		if (!updateWrappers.containsKey(this.getClass()))
+		if (!updateWrappers.containsKey(this.getClass())) {
 			updateWrappers.put(this.getClass(), new TilePacketWrapper(this.getClass()));
+		}
 
-		if (!descriptionWrappers.containsKey(this.getClass()))
+		if (!descriptionWrappers.containsKey(this.getClass())) {
 			descriptionWrappers.put(this.getClass(), new TilePacketWrapper(this.getClass()));
+		}
 
 		updatePacket = updateWrappers.get(this.getClass());
 		descriptionPacket = descriptionWrappers.get(this.getClass());
@@ -63,8 +65,7 @@ public abstract class TileBuildCraft extends TileEntity implements ISynchronized
 	}
 
 	@Override
-	public void invalidate()
-	{
+	public void invalidate() {
 		init = false;
 		super.invalidate();
 	}
@@ -78,8 +79,9 @@ public abstract class TileBuildCraft extends TileEntity implements ISynchronized
 	}
 
 	public void sendNetworkUpdate() {
-		if(CoreProxy.proxy.isSimulating(worldObj))
+		if (CoreProxy.proxy.isSimulating(worldObj)) {
 			CoreProxy.proxy.sendToPlayers(getUpdatePacket(), worldObj, xCoord, yCoord, zCoord, DefaultProps.NETWORK_UPDATE_RANGE);
+		}
 	}
 
 	@Override
@@ -112,4 +114,15 @@ public abstract class TileBuildCraft extends TileEntity implements ISynchronized
 
 	}
 
+    public boolean isInvNameLocalized()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    public boolean isStackValidForSlot(int i, ItemStack itemstack)
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
 }

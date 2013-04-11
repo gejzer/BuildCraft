@@ -1,26 +1,36 @@
-/** 
+/**
  * Copyright (c) SpaceToad, 2011
  * http://www.mod-buildcraft.com
- * 
- * BuildCraft is distributed under the terms of the Minecraft Mod Public 
+ *
+ * BuildCraft is distributed under the terms of the Minecraft Mod Public
  * License 1.0, or MMPL. Please check the contents of the license located in
  * http://www.mod-buildcraft.com/MMPL-1.0.txt
  */
 
 package buildcraft.energy;
 
+import net.minecraft.inventory.ICrafting;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntityFurnace;
+import net.minecraftforge.common.ForgeDirection;
+import net.minecraftforge.liquids.ILiquidTank;
+import net.minecraftforge.liquids.LiquidStack;
 import buildcraft.core.DefaultProps;
 import buildcraft.core.utils.Utils;
 import buildcraft.energy.gui.ContainerEngine;
-import net.minecraft.src.ICrafting;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.NBTTagCompound;
-import net.minecraft.src.TileEntityFurnace;
 
 public class EngineStone extends Engine {
+	final float maxProduction = 1f;
+	final float minProduction = maxProduction / 3;
+	final float target = 0.375f;
+	final float kp = 1f;
+	final float ki = 0.05f;
+	final float eLimit = (maxProduction - minProduction) / ki;
 
 	int burnTime = 0;
 	int totalBurnTime = 0;
+	float esum = 0;
 
 	private ItemStack itemInInventory;
 
@@ -72,8 +82,13 @@ public class EngineStone extends Engine {
 		currentOutput = 0;
 		if (burnTime > 0) {
 			burnTime--;
-			currentOutput = 1;
-			addEnergy(1);
+
+			float e = target * maxEnergy - energy;
+
+			esum = Math.min(Math.max(esum + e, -eLimit), eLimit);
+			currentOutput = Math.min(Math.max(e * kp + esum * ki, minProduction), maxProduction);
+
+			addEnergy(currentOutput);
 		}
 
 		if (burnTime == 0 && tile.isRedstonePowered) {
@@ -94,7 +109,7 @@ public class EngineStone extends Engine {
 	private int getItemBurnTime(ItemStack itemstack) {
 		if (itemstack == null)
 			return 0;
-		
+
 		return TileEntityFurnace.getItemBurnTime(itemstack);
 	}
 
@@ -103,7 +118,7 @@ public class EngineStone extends Engine {
 	public void readFromNBT(NBTTagCompound nbttagcompound) {
 		burnTime = nbttagcompound.getInteger("burnTime");
 		totalBurnTime = nbttagcompound.getInteger("totalBurnTime");
-		
+
 		if (nbttagcompound.hasKey("itemInInventory")) {
 			NBTTagCompound cpt = nbttagcompound.getCompoundTag("itemInInventory");
 			itemInInventory = ItemStack.loadItemStackFromNBT(cpt);
@@ -115,7 +130,7 @@ public class EngineStone extends Engine {
 	public void writeToNBT(NBTTagCompound nbttagcompound) {
 		nbttagcompound.setInteger("burnTime", burnTime);
 		nbttagcompound.setInteger("totalBurnTime", totalBurnTime);
-		
+
 		if (itemInInventory != null) {
 			NBTTagCompound cpt = new NBTTagCompound();
 			itemInInventory.writeToNBT(cpt);
@@ -127,8 +142,9 @@ public class EngineStone extends Engine {
 	@Override
 	public void delete() {
 		ItemStack stack = tile.getStackInSlot(0);
-		if (stack != null)
+		if (stack != null) {
 			Utils.dropItems(tile.worldObj, stack, tile.xCoord, tile.yCoord, tile.zCoord);
+		}
 	}
 
 	@Override
@@ -138,7 +154,7 @@ public class EngineStone extends Engine {
 			energy = j;
 			break;
 		case 1:
-			currentOutput = j;
+			currentOutput = j / 100f;
 			break;
 		case 2:
 			burnTime = j;
@@ -151,35 +167,50 @@ public class EngineStone extends Engine {
 
 	@Override
 	public void sendGUINetworkData(ContainerEngine containerEngine, ICrafting iCrafting) {
-		iCrafting.updateCraftingInventoryInfo(containerEngine, 0, Math.round(energy));
-		iCrafting.updateCraftingInventoryInfo(containerEngine, 1, Math.round(currentOutput));
-		iCrafting.updateCraftingInventoryInfo(containerEngine, 2, burnTime);
-		iCrafting.updateCraftingInventoryInfo(containerEngine, 3, totalBurnTime);
+		iCrafting.sendProgressBarUpdate(containerEngine, 0, Math.round(energy));
+		iCrafting.sendProgressBarUpdate(containerEngine, 1, Math.round(currentOutput * 100f));
+		iCrafting.sendProgressBarUpdate(containerEngine, 2, burnTime);
+		iCrafting.sendProgressBarUpdate(containerEngine, 3, totalBurnTime);
 	}
 
 	@Override
 	public int getHeat() {
 		return Math.round(energy);
 	}
-	
+
 	/* IINVENTORY */
-	@Override public int getSizeInventory() { return 1; }
-	@Override public ItemStack getStackInSlot(int i) { return itemInInventory; }
-	@Override public void setInventorySlotContents(int i, ItemStack itemstack) { itemInInventory = itemstack; }
+	@Override
+	public int getSizeInventory() {
+		return 1;
+	}
 
 	@Override
-	public ItemStack decrStackSize(int i, int j) {
-		if (itemInInventory != null) {
-			ItemStack newStack = itemInInventory.splitStack(j);
+	public ItemStack getStackInSlot(int i) {
+		return itemInInventory;
+	}
 
-			if (itemInInventory.stackSize == 0) {
+	@Override
+	public void setInventorySlotContents(int i, ItemStack itemstack) {
+		itemInInventory = itemstack;
+	}
+
+	@Override
+	public ItemStack decrStackSize(int slot, int amount) {
+		if (itemInInventory != null) {
+			if (itemInInventory.stackSize <= 0) {
 				itemInInventory = null;
+				return null;
+			}
+			ItemStack newStack = itemInInventory;
+			if (amount >= newStack.stackSize) {
+				itemInInventory = null;
+			} else {
+				newStack = itemInInventory.splitStack(amount);
 			}
 
 			return newStack;
-		} else {
-			return null;
 		}
+		return null;
 	}
 
 	@Override
@@ -191,4 +222,8 @@ public class EngineStone extends Engine {
 		return toReturn;
 	}
 
+	@Override
+	public ILiquidTank getTank(ForgeDirection direction, LiquidStack type) {
+		return null;
+	}
 }

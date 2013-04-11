@@ -9,8 +9,8 @@
 
 package buildcraft.energy;
 
+import net.minecraft.item.ItemStack;
 import buildcraft.core.ItemBlockBuildCraft;
-import net.minecraft.src.ItemStack;
 
 public class ItemEngine extends ItemBlockBuildCraft {
 
@@ -25,14 +25,13 @@ public class ItemEngine extends ItemBlockBuildCraft {
 		return i;
 	}
 
-	@SuppressWarnings({ "all" })
-	public String getItemNameIS(ItemStack itemstack) {
-		if (itemstack.getItemDamage() == 0) {
+	@Override
+	public String getUnlocalizedName(ItemStack itemstack) {
+		if (itemstack.getItemDamage() == 0)
 			return "tile.engineWood";
-		} else if (itemstack.getItemDamage() == 1) {
+		else if (itemstack.getItemDamage() == 1)
 			return "tile.engineStone";
-		} else {
+		else
 			return "tile.engineIron";
-		}
 	}
 }

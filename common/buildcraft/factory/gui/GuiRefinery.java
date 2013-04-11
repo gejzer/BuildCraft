@@ -9,8 +9,8 @@
 
 package buildcraft.factory.gui;
 
-import net.minecraft.src.InventoryPlayer;
-import net.minecraft.src.ItemStack;
+import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.liquids.LiquidContainerRegistry;
 import net.minecraftforge.liquids.LiquidStack;
 
@@ -49,14 +49,13 @@ public class GuiRefinery extends GuiAdvancedInterface {
 		fontRenderer.drawString("<-", 106, 59, 0x404040);
 		fontRenderer.drawString(StringUtil.localize("gui.inventory"), 8, (ySize - 96) + 2, 0x404040);
 
-		drawForegroundSelection();
+		drawForegroundSelection(par1, par2);
 	}
 
 	@Override
 	protected void drawGuiContainerBackgroundLayer(float f, int x, int y) {
-		int i = mc.renderEngine.getTexture(DefaultProps.TEXTURE_PATH_GUI + "/refinery_filter.png");
-		GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-		mc.renderEngine.bindTexture(i);
+        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+		mc.renderEngine.bindTexture(DefaultProps.TEXTURE_PATH_GUI + "/refinery_filter.png");
 		int j = (width - xSize) / 2;
 		int k = (height - ySize) / 2;
 		drawTexturedModalRect(j, k, 0, 0, xSize, ySize);
@@ -76,11 +75,15 @@ public class GuiRefinery extends GuiAdvancedInterface {
 
 		AdvancedSlot slot = null;
 
-		if (position != -1 && position != 2)
+		if (position != -1 && position != 2) {
 			slot = slots[position];
+		}
 
 		if (slot != null) {
 			LiquidStack liquid = LiquidContainerRegistry.getLiquidForFilledItem(mc.thePlayer.inventory.getItemStack());
+
+			if (liquid == null)
+				return;
 
 			container.setFilter(position, liquid.itemID, liquid.itemMeta);
 		}
@@ -94,21 +97,23 @@ public class GuiRefinery extends GuiAdvancedInterface {
 		((ItemSlot) slots[0]).stack = filter0;
 		((ItemSlot) slots[1]).stack = filter1;
 
-		int liquid0Id = 0;
-		int liquid1Id = 0;
+		LiquidStack liquid0 = null;
+		LiquidStack liquid1 = null;
 
-		if (filter0 != null)
-			liquid0Id = filter0.itemID;
-		if (filter1 != null)
-			liquid1Id = filter1.itemID;
+		if (filter0 != null) {
+			liquid0 = new LiquidStack(filter0.itemID, LiquidContainerRegistry.BUCKET_VOLUME, filter0.getItemDamage());
+		}
+		if (filter1 != null) {
+			liquid1 = new LiquidStack(filter1.itemID, LiquidContainerRegistry.BUCKET_VOLUME, filter1.getItemDamage());
+		}
 
-		RefineryRecipe recipe = RefineryRecipe.findRefineryRecipe(new LiquidStack(liquid0Id, LiquidContainerRegistry.BUCKET_VOLUME, 0),
-				new LiquidStack(liquid1Id, LiquidContainerRegistry.BUCKET_VOLUME, 0));
+		RefineryRecipe recipe = RefineryRecipe.findRefineryRecipe(liquid0, liquid1);
 
-		if (recipe != null)
+		if (recipe != null) {
 			((ItemSlot) slots[2]).stack = recipe.result.asItemStack();
-		else
+		} else {
 			((ItemSlot) slots[2]).stack = null;
+		}
 	}
 
 }

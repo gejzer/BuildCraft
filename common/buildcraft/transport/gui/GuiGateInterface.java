@@ -11,8 +11,9 @@ package buildcraft.transport.gui;
 
 import java.util.Iterator;
 
-import net.minecraft.src.IInventory;
-import net.minecraft.src.ItemStack;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.Icon;
 
 import org.lwjgl.opengl.GL11;
 
@@ -21,8 +22,10 @@ import buildcraft.api.gates.ITrigger;
 import buildcraft.api.gates.ITriggerParameter;
 import buildcraft.core.gui.GuiAdvancedInterface;
 import buildcraft.core.utils.StringUtil;
-import buildcraft.transport.Pipe;
 import buildcraft.transport.Gate.GateKind;
+import buildcraft.transport.Pipe;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class GuiGateInterface extends GuiAdvancedInterface {
 
@@ -53,22 +56,14 @@ public class GuiGateInterface extends GuiAdvancedInterface {
 				return "";
 		}
 
+        @SideOnly(Side.CLIENT)
 		@Override
-		public String getTexture() {
+		public Icon getTexture() {
 			ITrigger trigger = pipe.getTrigger(slot);
 			if (trigger != null)
-				return trigger.getTextureFile();
+				return trigger.getIconProvider().getIcon(trigger.getIconIndex());
 			else
-				return "";
-		}
-
-		@Override
-		public int getTextureIndex() {
-			ITrigger trigger = pipe.getTrigger(slot);
-			if (trigger != null)
-				return trigger.getIndexInTexture();
-			else
-				return 0;
+				return null;
 		}
 
 		@Override
@@ -102,22 +97,14 @@ public class GuiGateInterface extends GuiAdvancedInterface {
 				return "";
 		}
 
+		@SideOnly(Side.CLIENT)
 		@Override
-		public String getTexture() {
+		public Icon getTexture() {
 			IAction action = pipe.getAction(slot);
 			if (action != null)
-				return action.getTexture();
+				return action.getIconProvider().getIcon(action.getIconIndex());
 			else
-				return "";
-		}
-
-		@Override
-		public int getTextureIndex() {
-			IAction action = pipe.getAction(slot);
-			if (action != null)
-				return action.getIndexInTexture();
-			else
-				return 0;
+				return null;
 		}
 
 		@Override
@@ -243,23 +230,24 @@ public class GuiGateInterface extends GuiAdvancedInterface {
 		fontRenderer.drawString(name, getCenteredOffset(name), 15, 0x404040);
 		fontRenderer.drawString(StringUtil.localize("gui.inventory"), 8, ySize - 97, 0x404040);
 
-		drawForegroundSelection();
+		drawForegroundSelection(par1, par2);
 	}
 
 	@Override
 	protected void drawGuiContainerBackgroundLayer(float f, int x, int y) {
 
 		_container.synchronize();
-		int texture = 0;
-
-		texture = mc.renderEngine.getTexture(_container.getGateGuiFile());
-
-		GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+		
+		String texture = _container.getGateGuiFile();
+		
+        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
 		mc.renderEngine.bindTexture(texture);
+
 		int cornerX = (width - xSize) / 2;
 		int cornerY = (height - ySize) / 2;
 		drawTexturedModalRect(cornerX, cornerY, 0, 0, xSize, ySize);
 
+		int triggerTracker = 0;
 		for (int s = 0; s < slots.length; ++s) {
 			AdvancedSlot slot = slots[s];
 
@@ -267,12 +255,8 @@ public class GuiGateInterface extends GuiAdvancedInterface {
 				ITrigger trigger = ((TriggerSlot) slot).getTrigger();
 
 				if (_container.getGateOrdinal() >= GateKind.AND_3.ordinal()) {
-					ITriggerParameter parameter = null;
 
-					if (slots[s + nbEntries * 2] != null && slots[s + nbEntries * 2].isDefined())
-						parameter = ((TriggerParameterSlot) slots[s + nbEntries * 2]).getTriggerParameter();
-
-					if (_container.isNearbyTriggerActive(trigger, parameter)) {
+					if (_container.triggerState[triggerTracker++]) {
 						mc.renderEngine.bindTexture(texture);
 
 						drawTexturedModalRect(cornerX + slot.x + 35, cornerY + slot.y + 6, 176, 18, 18, 4);
@@ -283,7 +267,7 @@ public class GuiGateInterface extends GuiAdvancedInterface {
 
 						drawTexturedModalRect(cornerX + slot.x + 17, cornerY + slot.y - 1, 176, 0, 18, 18);
 					}
-				} else if (_container.isNearbyTriggerActive(trigger, null)) {
+				} else if (_container.triggerState[triggerTracker++]) {
 					mc.renderEngine.bindTexture(texture);
 
 					drawTexturedModalRect(cornerX + slot.x + 17, cornerY + slot.y + 6, 176, 18, 18, 4);
@@ -316,10 +300,11 @@ public class GuiGateInterface extends GuiAdvancedInterface {
 			ITrigger changed = null;
 			if (triggerSlot.getTrigger() == null) {
 
-				if (k == 0)
+				if (k == 0) {
 					changed = _container.getFirstTrigger();
-				else
+				} else {
 					changed = _container.getLastTrigger();
+				}
 
 			} else {
 				Iterator<ITrigger> it = _container.getTriggerIterator(k != 0);
@@ -350,10 +335,11 @@ public class GuiGateInterface extends GuiAdvancedInterface {
 			IAction changed = null;
 			if (actionSlot.getAction() == null) {
 
-				if (k == 0)
+				if (k == 0) {
 					changed = _container.getFirstAction();
-				else
+				} else {
 					changed = _container.getLastAction();
+				}
 
 			} else {
 				Iterator<IAction> it = _container.getActionIterator(k != 0);

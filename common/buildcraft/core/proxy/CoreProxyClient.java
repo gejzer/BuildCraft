@@ -12,12 +12,22 @@ package buildcraft.core.proxy;
 import java.io.File;
 import java.util.List;
 
-import cpw.mods.fml.client.FMLClientHandler;
-import cpw.mods.fml.client.registry.RenderingRegistry;
-import cpw.mods.fml.common.registry.LanguageRegistry;
-
+import net.minecraft.block.Block;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.WorldClient;
+import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.ChunkCoordinates;
+import net.minecraft.util.StringTranslate;
+import net.minecraft.world.World;
 import buildcraft.BuildCraftCore;
-import buildcraft.core.DefaultProps;
+import buildcraft.api.core.LaserKind;
 import buildcraft.core.EntityBlock;
 import buildcraft.core.EntityEnergyLaser;
 import buildcraft.core.EntityPowerLaser;
@@ -30,22 +40,9 @@ import buildcraft.core.render.RenderingEntityBlocks;
 import buildcraft.core.render.RenderingMarkers;
 import buildcraft.core.render.RenderingOil;
 import buildcraft.transport.render.TileEntityPickupFX;
-
-import net.minecraft.client.Minecraft;
-import net.minecraft.src.Block;
-import net.minecraft.src.ChunkCoordinates;
-import net.minecraft.src.CreativeTabs;
-import net.minecraft.src.Entity;
-import net.minecraft.src.EntityItem;
-import net.minecraft.src.EntityPlayer;
-import net.minecraft.src.Item;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.Packet;
-import net.minecraft.src.StringTranslate;
-import net.minecraft.src.TileEntity;
-import net.minecraft.src.World;
-import net.minecraft.src.WorldClient;
-import net.minecraftforge.client.MinecraftForgeClient;
+import cpw.mods.fml.client.FMLClientHandler;
+import cpw.mods.fml.client.registry.RenderingRegistry;
+import cpw.mods.fml.common.registry.LanguageRegistry;
 
 public class CoreProxyClient extends CoreProxy {
 
@@ -63,13 +60,15 @@ public class CoreProxyClient extends CoreProxy {
 	public void removeEntity(Entity entity) {
 		super.removeEntity(entity);
 
-		if (isRenderWorld(entity.worldObj))
+		if (isRenderWorld(entity.worldObj)) {
 			((WorldClient) entity.worldObj).removeEntityFromWorld(entity.entityId);
+		}
 	}
 
 	/* WRAPPER */
+	@SuppressWarnings("rawtypes")
 	public void feedSubBlocks(int id, CreativeTabs tab, List itemList) {
-		if(Block.blocksList[id] == null)
+		if (Block.blocksList[id] == null)
 			return;
 
 		Block.blocksList[id].getSubBlocks(id, tab, itemList);
@@ -80,17 +79,21 @@ public class CoreProxyClient extends CoreProxy {
 	public String getCurrentLanguage() {
 		return StringTranslate.getInstance().getCurrentLanguage();
 	}
+
 	@Override
 	public void addName(Object obj, String s) {
 		LanguageRegistry.addName(obj, s);
 	}
+
 	@Override
 	public void addLocalization(String s1, String string) {
 		LanguageRegistry.instance().addStringLocalization(s1, string);
 	}
+
 	@Override
-	public String getItemDisplayName(ItemStack stack){
-		if (Item.itemsList[stack.itemID] == null) return "";
+	public String getItemDisplayName(ItemStack stack) {
+		if (Item.itemsList[stack.itemID] == null)
+			return "";
 
 		return Item.itemsList[stack.itemID].getItemDisplayName(stack);
 	}
@@ -112,9 +115,6 @@ public class CoreProxyClient extends CoreProxy {
 		RenderingRegistry.registerBlockHandler(BuildCraftCore.legacyPipeModel, new RenderingEntityBlocks());
 		RenderingRegistry.registerBlockHandler(new RenderingOil());
 		RenderingRegistry.registerBlockHandler(new RenderingMarkers());
-
-		MinecraftForgeClient.preloadTexture(DefaultProps.TEXTURE_BLOCKS);
-		MinecraftForgeClient.preloadTexture(DefaultProps.TEXTURE_ITEMS);
 	}
 
 	@Override
@@ -125,11 +125,10 @@ public class CoreProxyClient extends CoreProxy {
 		RenderingRegistry.registerEntityRenderingHandler(EntityRobot.class, new RenderRobot());
 	}
 
-
 	/* NETWORKING */
 	@Override
 	public void sendToServer(Packet packet) {
-		FMLClientHandler.instance().getClient().getSendQueue().addToSendQueue(packet);
+		FMLClientHandler.instance().getClient().getNetHandler().addToSendQueue(packet);
 	}
 
 	/* FILE SYSTEM */
@@ -145,11 +144,15 @@ public class CoreProxyClient extends CoreProxy {
 
 	private EntityPlayer createNewPlayer(World world) {
 		EntityPlayer player = new EntityPlayer(world) {
-			@Override public void sendChatToPlayer(String var1) {}
+			@Override
+			public void sendChatToPlayer(String var1) {
+			}
+
 			@Override
 			public boolean canCommandSenderUseCommand(int var1, String var2) {
 				return false;
 			}
+
 			@Override
 			public ChunkCoordinates getPlayerCoordinates() {
 				return null;
@@ -167,5 +170,23 @@ public class CoreProxyClient extends CoreProxy {
 
 		return CoreProxy.buildCraftPlayer;
 	}
+	
+	@Override
+	public EntityBlock newEntityBlock(World world, double i, double j,	double k, double iSize, double jSize, double kSize, LaserKind laserKind) {
+		EntityBlock eb = super.newEntityBlock(world, i, j, k, iSize, jSize, kSize, laserKind);
+		switch (laserKind) {
+		case Blue:
+			eb.texture = BuildCraftCore.blueLaserTexture;
+			break;
 
+		case Red:
+			eb.texture = BuildCraftCore.redLaserTexture;
+			break;
+
+		case Stripes:
+			eb.texture = BuildCraftCore.stripesLaserTexture;
+			break;
+		}
+		return eb;
+	}
 }

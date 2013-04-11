@@ -11,16 +11,15 @@ package buildcraft.api.bptblocks;
 
 import java.util.LinkedList;
 
+import net.minecraft.block.Block;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import buildcraft.api.blueprints.BlockSignature;
 import buildcraft.api.blueprints.BptBlock;
 import buildcraft.api.blueprints.BptSlotInfo;
 import buildcraft.api.blueprints.IBptContext;
-import net.minecraftforge.common.ForgeDirection;
 
-import net.minecraft.src.Block;
-import net.minecraft.src.Item;
-import net.minecraft.src.ItemStack;
-
+@Deprecated
 public class BptBlockSign extends BptBlock {
 
 	boolean isWall;
@@ -46,7 +45,7 @@ public class BptBlockSign extends BptBlock {
 			}
 			slot.meta = (int) (angle / 360.0 * 16.0);
 		} else {
-//			slot.meta = ForgeDirection.values()[slot.meta].rotateLeft().ordinal();
+			// slot.meta = ForgeDirection.values()[slot.meta].rotateLeft().ordinal();
 		}
 	}
 

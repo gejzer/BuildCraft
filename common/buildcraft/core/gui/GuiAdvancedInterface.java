@@ -1,12 +1,12 @@
 package buildcraft.core.gui;
 
-import net.minecraft.src.IInventory;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.OpenGlHelper;
-import net.minecraft.src.RenderHelper;
+import net.minecraft.client.renderer.OpenGlHelper;
+import net.minecraft.client.renderer.RenderHelper;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.Icon;
 
 import org.lwjgl.opengl.GL11;
-
 
 public abstract class GuiAdvancedInterface extends GuiBuildCraft {
 
@@ -26,12 +26,8 @@ public abstract class GuiAdvancedInterface extends GuiBuildCraft {
 				return "";
 		}
 
-		public String getTexture() {
-			return "";
-		}
-
-		public int getTextureIndex() {
-			return 0;
+		public Icon getTexture() {
+			return null;
 		}
 
 		public ItemStack getItemStack() {
@@ -46,16 +42,12 @@ public abstract class GuiAdvancedInterface extends GuiBuildCraft {
 			if (!isDefined())
 				return;
 
-			if (getItemStack() != null)
+			if (getItemStack() != null) {
 				drawStack(getItemStack());
-			else if (getTexture() != null && !getTexture().equals("")) {
-				int texture = mc.renderEngine.getTexture(getTexture());
-				mc.renderEngine.bindTexture(texture);
-
-				int textureI = getTextureIndex() >> 4;
-				int textureJ = getTextureIndex() - textureI * 16;
-
-				drawTexturedModalRect(cornerX + x, cornerY + y, 16 * textureJ, 16 * textureI, 16, 16);
+			} else if (getTexture() != null) {
+			    mc.renderEngine.bindTexture("/gui/items.png");
+			    //System.out.printf("Drawing advanced sprite %s (%d,%d) at %d %d\n", getTexture().getIconName(), getTexture().getOriginX(),getTexture().getOriginY(),cornerX + x, cornerY + y);
+				drawTexturedModelRectFromIcon(cornerX + x, cornerY + y, getTexture(), 16, 16);
 			}
 
 		}
@@ -88,8 +80,7 @@ public abstract class GuiAdvancedInterface extends GuiBuildCraft {
 	}
 
 	/**
-	 * More dynamic slot displaying an inventory stack at specified position in
-	 * the passed IInventory
+	 * More dynamic slot displaying an inventory stack at specified position in the passed IInventory
 	 */
 	public class IInventorySlot extends AdvancedSlot {
 
@@ -140,43 +131,35 @@ public abstract class GuiAdvancedInterface extends GuiBuildCraft {
 		for (int s = 0; s < slots.length; ++s) {
 			AdvancedSlot slot = slots[s];
 
-			if (slot != null)
+			if (slot != null) {
 				slot.drawSprite(cornerX, cornerY);
+			}
 		}
 
 		GL11.glPopMatrix();
 	}
 
-	protected void drawForegroundSelection() {
+	protected void drawForegroundSelection(int mouseX, int mouseY) {
 		String s = "";
 
 		int cornerX = (width - xSize) / 2;
 		int cornerY = (height - ySize) / 2;
 
-		int position = getSlotAtLocation(lastX - cornerX, lastY - cornerY);
+		int position = getSlotAtLocation(mouseX - cornerX, mouseY - cornerY);
 
 		if (position != -1) {
 			AdvancedSlot slot = slots[position];
 
-			if (slot != null)
+			if (slot != null) {
 				s = slot.getDescription();
+			}
 		}
 
 		if (s.length() > 0) {
-			int i2 = (lastX - cornerX);
-			int k2 = lastY - cornerY;
+			int i2 = (mouseX - cornerX);
+			int k2 = mouseY - cornerY;
 			drawCreativeTabHoveringText(s, i2, k2);
+			RenderHelper.enableGUIStandardItemLighting();
 		}
-	}
-
-	private int lastX = 0;
-	private int lastY = 0;
-
-	@Override
-	protected void mouseMovedOrUp(int i, int j, int k) {
-		super.mouseMovedOrUp(i, j, k);
-
-		lastX = i;
-		lastY = j;
 	}
 }

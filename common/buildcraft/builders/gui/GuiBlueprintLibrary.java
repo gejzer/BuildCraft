@@ -9,8 +9,8 @@
 
 package buildcraft.builders.gui;
 
-import net.minecraft.src.EntityPlayer;
-import net.minecraft.src.GuiButton;
+import net.minecraft.client.gui.GuiButton;
+import net.minecraft.entity.player.EntityPlayer;
 
 import org.lwjgl.opengl.GL11;
 
@@ -63,15 +63,15 @@ public class GuiBlueprintLibrary extends GuiBuildCraft {
 		prevPageButton = new GuiButton(0, j + 100, k + 23, 20, 20, "<");
 		nextPageButton = new GuiButton(1, j + 122, k + 23, 20, 20, ">");
 
-		controlList.add(prevPageButton);
-		controlList.add(nextPageButton);
+		buttonList.add(prevPageButton);
+		buttonList.add(nextPageButton);
 
 		// if (library.owner.equals(player.username)) {
 		deleteButton = new GuiButton(2, j + 100, k + 114, 25, 20, StringUtil.localize("gui.del"));
-		controlList.add(deleteButton);
+		buttonList.add(deleteButton);
 
 		lockButton = new GuiButton(3, j + 127, k + 114, 40, 20, StringUtil.localize("gui.lock"));
-		controlList.add(lockButton);
+		buttonList.add(lockButton);
 		if (library.locked) {
 			lockButton.displayString = StringUtil.localize("gui.unlock");
 		} else {
@@ -90,8 +90,10 @@ public class GuiBlueprintLibrary extends GuiBuildCraft {
 		String[] currentNames = library.currentNames;
 		for (int i = 0; i < currentNames.length; i++) {
 			String name = currentNames[i];
-			if(name == null) break;
-			if(name.length() > BuildCraftBuilders.MAX_BLUEPRINTS_NAME_SIZE){
+			if (name == null) {
+				break;
+			}
+			if (name.length() > BuildCraftBuilders.MAX_BLUEPRINTS_NAME_SIZE) {
 				name = name.substring(0, BuildCraftBuilders.MAX_BLUEPRINTS_NAME_SIZE);
 			}
 
@@ -108,16 +110,9 @@ public class GuiBlueprintLibrary extends GuiBuildCraft {
 
 	@Override
 	protected void drawGuiContainerBackgroundLayer(float f, int x, int y) {
-		int i = 0;
-		// if (library.owner.equals(player.username)) {
-		i = mc.renderEngine.getTexture(DefaultProps.TEXTURE_PATH_GUI + "/library_rw.png");
-		// } else {
-		// i = mc.renderEngine
-		// .getTexture("/net/minecraft/src/buildcraft/builders/gui/library_r.png");
-		// }
+        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+		mc.renderEngine.bindTexture(DefaultProps.TEXTURE_PATH_GUI + "/library_rw.png");
 
-		GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-		mc.renderEngine.bindTexture(i);
 		int j = (width - xSize) / 2;
 		int k = (height - ySize) / 2;
 		drawTexturedModalRect(j, k, 0, 0, xSize, ySize);
@@ -130,7 +125,7 @@ public class GuiBlueprintLibrary extends GuiBuildCraft {
 	}
 
 	@Override
-	public void updateScreen(){
+	public void updateScreen() {
 		if (library.locked) {
 			lockButton.displayString = StringUtil.localize("gui.unlock");
 		} else {
@@ -140,8 +135,7 @@ public class GuiBlueprintLibrary extends GuiBuildCraft {
 
 	@Override
 	protected void actionPerformed(GuiButton button) {
-		PacketLibraryAction packet = new PacketLibraryAction(PacketIds.LIBRARY_ACTION,
-				library.xCoord, library.yCoord, library.zCoord);
+		PacketLibraryAction packet = new PacketLibraryAction(PacketIds.LIBRARY_ACTION, library.xCoord, library.yCoord, library.zCoord);
 		if (button == nextPageButton) {
 			packet.actionId = TileBlueprintLibrary.COMMAND_NEXT;
 		} else if (button == prevPageButton) {
@@ -167,12 +161,11 @@ public class GuiBlueprintLibrary extends GuiBuildCraft {
 		if (x >= 8 && x <= 88) {
 			int ySlot = (y - 24) / 9;
 
-			if (ySlot >= 0 && ySlot <= 11){
-				if (ySlot < library.currentNames.length){
+			if (ySlot >= 0 && ySlot <= 11) {
+				if (ySlot < library.currentNames.length) {
 					PacketPayload payload = new PacketPayload();
-					payload.intPayload = new int[]{ySlot};
-					PacketLibraryAction packet = new PacketLibraryAction(PacketIds.LIBRARY_SELECT,
-							library.xCoord, library.yCoord, library.zCoord);
+					payload.intPayload = new int[] { ySlot };
+					PacketLibraryAction packet = new PacketLibraryAction(PacketIds.LIBRARY_SELECT, library.xCoord, library.yCoord, library.zCoord);
 					packet.actionId = ySlot;
 					CoreProxy.proxy.sendToServer(packet.getPacket());
 				}

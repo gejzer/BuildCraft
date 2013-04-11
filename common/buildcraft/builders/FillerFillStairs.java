@@ -9,10 +9,12 @@
 
 package buildcraft.builders;
 
+import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Icon;
 import buildcraft.api.core.IBox;
-import buildcraft.core.DefaultProps;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.TileEntity;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class FillerFillStairs extends FillerPattern {
 
@@ -120,9 +122,8 @@ public class FillerFillStairs extends FillerPattern {
 		if (kind == 0) {
 			while (x2 - x1 + 1 > 0 && z2 - z1 + 1 > 0 && x2 - x1 < sizeX && z2 - z1 < sizeZ && height >= yMin && height <= yMax) {
 
-				if (fill(x1, height, z1, x2, height, z2, stackToPlace, tile.worldObj)) {
+				if (fill(x1, height, z1, x2, height, z2, stackToPlace, tile.worldObj))
 					return false;
-				}
 
 				if (heightStep == 1) {
 					x1 += steps[0];
@@ -176,9 +177,8 @@ public class FillerFillStairs extends FillerPattern {
 
 				}
 
-				if (fill(x1, height, z1, x2, height, z2, stackToPlace, tile.worldObj)) {
+				if (fill(x1, height, z1, x2, height, z2, stackToPlace, tile.worldObj))
 					return false;
-				}
 
 				dimX += stepDiagX;
 				dimZ += stepDiagZ;
@@ -191,13 +191,9 @@ public class FillerFillStairs extends FillerPattern {
 	}
 
 	@Override
-	public String getTextureFile() {
-		return DefaultProps.TEXTURE_BLOCKS;
-	}
-
-	@Override
-	public int getTextureIndex() {
-		return 4 * 16 + 8;
+    @SideOnly(Side.CLIENT)
+	public Icon getTexture() {
+		return BuilderProxyClient.fillerStairsTexture;
 	}
 
 	@Override

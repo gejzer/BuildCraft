@@ -9,10 +9,12 @@
 
 package buildcraft.builders;
 
+import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Icon;
 import buildcraft.api.core.IBox;
-import buildcraft.core.DefaultProps;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.TileEntity;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class FillerFillWalls extends FillerPattern {
 
@@ -26,41 +28,31 @@ public class FillerFillWalls extends FillerPattern {
 		int yMax = (int) box.pMax().y;
 		int zMax = (int) box.pMax().z;
 
-		if (fill(xMin, yMin, zMin, xMax, yMin, zMax, stackToPlace, tile.worldObj)) {
+		if (fill(xMin, yMin, zMin, xMax, yMin, zMax, stackToPlace, tile.worldObj))
 			return false;
-		}
 
-		if (fill(xMin, yMin, zMin, xMin, yMax, zMax, stackToPlace, tile.worldObj)) {
+		if (fill(xMin, yMin, zMin, xMin, yMax, zMax, stackToPlace, tile.worldObj))
 			return false;
-		}
 
-		if (fill(xMin, yMin, zMin, xMax, yMax, zMin, stackToPlace, tile.worldObj)) {
+		if (fill(xMin, yMin, zMin, xMax, yMax, zMin, stackToPlace, tile.worldObj))
 			return false;
-		}
 
-		if (fill(xMax, yMin, zMin, xMax, yMax, zMax, stackToPlace, tile.worldObj)) {
+		if (fill(xMax, yMin, zMin, xMax, yMax, zMax, stackToPlace, tile.worldObj))
 			return false;
-		}
 
-		if (fill(xMin, yMin, zMax, xMax, yMax, zMax, stackToPlace, tile.worldObj)) {
+		if (fill(xMin, yMin, zMax, xMax, yMax, zMax, stackToPlace, tile.worldObj))
 			return false;
-		}
 
-		if (fill(xMin, yMax, zMin, xMax, yMax, zMax, stackToPlace, tile.worldObj)) {
+		if (fill(xMin, yMax, zMin, xMax, yMax, zMax, stackToPlace, tile.worldObj))
 			return false;
-		}
 
 		return true;
 	}
 
+    @SideOnly(Side.CLIENT)
 	@Override
-	public String getTextureFile() {
-		return DefaultProps.TEXTURE_BLOCKS;
-	}
-
-	@Override
-	public int getTextureIndex() {
-		return 4 * 16 + 6;
+	public Icon getTexture() {
+		return BuilderProxyClient.fillerWallsTexture;
 	}
 
 	@Override

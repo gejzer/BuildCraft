@@ -14,16 +14,26 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Random;
 
-import buildcraft.BuildCraftTransport;
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
+
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeDirection;
+import buildcraft.BuildCraftTransport;
+import buildcraft.api.core.IIconProvider;
 import buildcraft.api.core.SafeTimeTracker;
-import buildcraft.api.gates.Action;
 import buildcraft.api.gates.ActionManager;
 import buildcraft.api.gates.IAction;
 import buildcraft.api.gates.IActionReceptor;
 import buildcraft.api.gates.ITrigger;
 import buildcraft.api.gates.ITriggerParameter;
-import buildcraft.api.gates.Trigger;
 import buildcraft.api.gates.TriggerParameter;
 import buildcraft.api.transport.IPipe;
 import buildcraft.core.IDropControlInventory;
@@ -33,14 +43,8 @@ import buildcraft.core.utils.Utils;
 import buildcraft.transport.Gate.GateConditional;
 import buildcraft.transport.pipes.PipeLogic;
 import buildcraft.transport.triggers.ActionSignalOutput;
-
-import net.minecraft.src.Entity;
-import net.minecraft.src.EntityItem;
-import net.minecraft.src.EntityPlayer;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.NBTTagCompound;
-import net.minecraft.src.TileEntity;
-import net.minecraft.src.World;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public abstract class Pipe implements IPipe, IDropControlInventory {
 
@@ -65,9 +69,9 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 	@SuppressWarnings("rawtypes")
 	private static Map<Class, TilePacketWrapper> networkWrappers = new HashMap<Class, TilePacketWrapper>();
 
-	public ITrigger[] activatedTriggers = new Trigger[8];
+	public ITrigger[] activatedTriggers = new ITrigger[8];
 	public ITriggerParameter[] triggerParameters = new ITriggerParameter[8];
-	public IAction[] activatedActions = new Action[8];
+	public IAction[] activatedActions = new IAction[8];
 
 	public boolean broadcastSignal[] = new boolean[] { false, false, false, false };
 	public boolean broadcastRedstone = false;
@@ -79,10 +83,10 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 		this.logic = logic;
 		this.itemID = itemID;
 
-		if (!networkWrappers.containsKey(this.getClass()))
+		if (!networkWrappers.containsKey(this.getClass())) {
 			networkWrappers
-					.put(this.getClass(), new TilePacketWrapper(new Class[] { TileGenericPipe.class, this.transport.getClass(),
-							this.logic.getClass() }));
+					.put(this.getClass(), new TilePacketWrapper(new Class[] { TileGenericPipe.class, this.transport.getClass(), this.logic.getClass() }));
+		}
 
 	}
 
@@ -123,6 +127,8 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 		transport.onBlockPlaced();
 	}
 
+	public void onBlockPlacedBy(EntityLiving placer) {}
+
 	public void onNeighborBlockChange(int blockId) {
 		logic.onNeighborBlockChange(blockId);
 		transport.onNeighborBlockChange(blockId);
@@ -130,31 +136,36 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 		updateSignalState();
 	}
 
-	public boolean isPipeConnected(TileEntity tile) {
-		return logic.isPipeConnected(tile) && transport.isPipeConnected(tile);
+	public boolean isPipeConnected(TileEntity tile, ForgeDirection side) {
+		return logic.isPipeConnected(tile) && transport.isPipeConnected(tile, side);
 	}
 
 	/**
-	 * Should return the texture file that is used to render this pipe
-	 */
-	public abstract String getTextureFile();
-
-	/**
-	 * Should return the textureindex in the file specified by getTextureFile()
-	 * @param direction The orientation for the texture that is requested. Unknown for the center pipe center
-	 * @return the index in the texture sheet
-	 */
-	public abstract int getTextureIndex(ForgeDirection direction);
-
-
-	/**
-	 *  Should return the textureindex used by the Pipe Item Renderer, as this is done client-side the default implementation might
-	 *  not work if your getTextureIndex(Orienations.Unknown) has logic
+	 * Should return the textureindex used by the Pipe Item Renderer, as this is done client-side the default implementation might not work if your
+	 * getTextureIndex(Orienations.Unknown) has logic. Then override this
+	 *
 	 * @return
 	 */
-	public int getTextureIndexForItem(){
-		return getTextureIndex(ForgeDirection.UNKNOWN);
+	public int getIconIndexForItem() {
+		return getIconIndex(ForgeDirection.UNKNOWN);
 	}
+
+	/**
+	 * Should return the IIconProvider that provides icons for this pipe
+	 * @return An array of icons
+	 */
+	@SideOnly(Side.CLIENT)
+	public abstract IIconProvider getIconProvider();
+
+	/**
+	 * Should return the index in the array returned by GetTextureIcons() for a specified direction
+	 * @param direction - The direction for which the indexed should be rendered. Unknown for pipe center
+	 *
+	 * @return An index valid in the array returned by getTextureIcons()
+	 */
+	public abstract int getIconIndex(ForgeDirection direction);
+
+
 
 	public void updateEntity() {
 
@@ -167,14 +178,17 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 		}
 
 		// Do not try to update gates client side.
-		if (worldObj.isRemote) return;
+		if (worldObj.isRemote)
+			return;
 
-		if (actionTracker.markTimeIfDelay(worldObj, 10))
+		if (actionTracker.markTimeIfDelay(worldObj, 10)) {
 			resolveActions();
+		}
 
 		// Update the gate if we have any
-		if (gate != null)
+		if (gate != null) {
 			gate.update();
+		}
 
 	}
 
@@ -193,8 +207,9 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 			nbttagcompound.setTag("Gate", nbttagcompoundC);
 		}
 
-		for (int i = 0; i < 4; ++i)
+		for (int i = 0; i < 4; ++i) {
 			nbttagcompound.setBoolean("wireSet[" + i + "]", wireSet[i]);
+		}
 
 		for (int i = 0; i < 8; ++i) {
 			nbttagcompound.setInteger("action[" + i + "]", activatedActions[i] != null ? activatedActions[i].getId() : 0);
@@ -227,8 +242,9 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 			}
 		}
 
-		for (int i = 0; i < 4; ++i)
+		for (int i = 0; i < 4; ++i) {
 			wireSet[i] = nbttagcompound.getBoolean("wireSet[" + i + "]");
+		}
 
 		for (int i = 0; i < 8; ++i) {
 			activatedActions[i] = ActionManager.actions[nbttagcompound.getInteger("action[" + i + "]")];
@@ -263,16 +279,16 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 				TileGenericPipe tilePipe = (TileGenericPipe) tile;
 
 				if (BlockGenericPipe.isFullyDefined(tilePipe.pipe))
-					if (isWireConnectedTo(tile, color))
+					if (isWireConnectedTo(tile, color)) {
 						foundBiggerSignal |= receiveSignal(tilePipe.pipe.signalStrength[color.ordinal()] - 1, color);
+					}
 			}
 		}
 
 		if (!foundBiggerSignal && signalStrength[color.ordinal()] != 0) {
 			signalStrength[color.ordinal()] = 0;
-			//worldObj.markBlockNeedsUpdate(xCoord, yCoord, zCoord);
+			// worldObj.markBlockNeedsUpdate(xCoord, yCoord, zCoord);
 			container.scheduleRenderUpdate();
-
 
 			for (ForgeDirection o : ForgeDirection.VALID_DIRECTIONS) {
 				TileEntity tile = container.getTile(o);
@@ -280,16 +296,18 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 				if (tile instanceof TileGenericPipe) {
 					TileGenericPipe tilePipe = (TileGenericPipe) tile;
 
-					if (BlockGenericPipe.isFullyDefined(tilePipe.pipe))
+					if (BlockGenericPipe.isFullyDefined(tilePipe.pipe)) {
 						tilePipe.pipe.internalUpdateScheduled = true;
+					}
 				}
 			}
 		}
 	}
 
 	private void updateSignalState() {
-		for (IPipe.WireColor c : IPipe.WireColor.values())
+		for (IPipe.WireColor c : IPipe.WireColor.values()) {
 			updateSignalStateForColor(c);
+		}
 	}
 
 	private void updateSignalStateForColor(IPipe.WireColor color) {
@@ -298,14 +316,15 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 
 		// STEP 1: compute internal signal strength
 
-		if (broadcastSignal[color.ordinal()])
+		if (broadcastSignal[color.ordinal()]) {
 			receiveSignal(255, color);
-		else
+		} else {
 			readNearbyPipesSignal(color);
+		}
 
 		// STEP 2: transmit signal in nearby blocks
 
-		if (signalStrength[color.ordinal()] > 1)
+		if (signalStrength[color.ordinal()] > 1) {
 			for (ForgeDirection o : ForgeDirection.VALID_DIRECTIONS) {
 				TileEntity tile = container.getTile(o);
 
@@ -313,10 +332,12 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 					TileGenericPipe tilePipe = (TileGenericPipe) tile;
 
 					if (BlockGenericPipe.isFullyDefined(tilePipe.pipe) && tilePipe.pipe.wireSet[color.ordinal()])
-						if (isWireConnectedTo(tile, color))
+						if (isWireConnectedTo(tile, color)) {
 							tilePipe.pipe.receiveSignal(signalStrength[color.ordinal()] - 1, color);
+						}
 				}
 			}
+		}
 	}
 
 	private boolean receiveSignal(int signal, IPipe.WireColor color) {
@@ -330,7 +351,7 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 			internalUpdateScheduled = true;
 
 			if (oldSignal == 0) {
-				//worldObj.markBlockNeedsUpdate(xCoord, yCoord, zCoord);
+				// worldObj.markBlockNeedsUpdate(xCoord, yCoord, zCoord);
 				container.scheduleRenderUpdate();
 
 			}
@@ -353,30 +374,31 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 	}
 
 	public boolean canConnectRedstone() {
-		if(hasGate())
+		if (hasGate())
 			return true;
 
 		return false;
 	}
 
-	public boolean isPoweringTo(int l) {
+	public int isPoweringTo(int l) {
 		if (!broadcastRedstone)
-			return false;
+			return 0;
 
 		ForgeDirection o = ForgeDirection.values()[l].getOpposite();
 		TileEntity tile = container.getTile(o);
 
 		if (tile instanceof TileGenericPipe && Utils.checkPipesConnections(this.container, tile))
-			return false;
+			return 0;
 
-		return true;
+		return 15;
 	}
 
-	public boolean isIndirectlyPoweringTo(int l) {
+	public int isIndirectlyPoweringTo(int l) {
 		return isPoweringTo(l);
 	}
 
-	public void randomDisplayTick(Random random) {}
+	public void randomDisplayTick(Random random) {
+	}
 
 	// / @Override TODO: should be in IPipe
 	public boolean isWired() {
@@ -414,23 +436,28 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 	}
 
 	public void onBlockRemoval() {
-		if (wireSet[IPipe.WireColor.Red.ordinal()])
+		if (wireSet[IPipe.WireColor.Red.ordinal()]) {
 			Utils.dropItems(worldObj, new ItemStack(BuildCraftTransport.redPipeWire), xCoord, yCoord, zCoord);
+		}
 
-		if (wireSet[IPipe.WireColor.Blue.ordinal()])
+		if (wireSet[IPipe.WireColor.Blue.ordinal()]) {
 			Utils.dropItems(worldObj, new ItemStack(BuildCraftTransport.bluePipeWire), xCoord, yCoord, zCoord);
+		}
 
-		if (wireSet[IPipe.WireColor.Green.ordinal()])
+		if (wireSet[IPipe.WireColor.Green.ordinal()]) {
 			Utils.dropItems(worldObj, new ItemStack(BuildCraftTransport.greenPipeWire), xCoord, yCoord, zCoord);
+		}
 
-		if (wireSet[IPipe.WireColor.Yellow.ordinal()])
+		if (wireSet[IPipe.WireColor.Yellow.ordinal()]) {
 			Utils.dropItems(worldObj, new ItemStack(BuildCraftTransport.yellowPipeWire), xCoord, yCoord, zCoord);
+		}
 
-		if (hasGate())
+		if (hasGate()) {
 			gate.dropGate(worldObj, xCoord, yCoord, zCoord);
+		}
 
-		for (ForgeDirection direction : ForgeDirection.VALID_DIRECTIONS){
-			if (container.hasFacade(direction)){
+		for (ForgeDirection direction : ForgeDirection.VALID_DIRECTIONS) {
+			if (container.hasFacade(direction)) {
 				container.dropFacade(direction);
 			}
 		}
@@ -459,13 +486,16 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 	public boolean isNearbyTriggerActive(ITrigger trigger, ITriggerParameter parameter) {
 		if (trigger instanceof ITriggerPipe)
 			return ((ITriggerPipe) trigger).isTriggerActive(this, parameter);
-		else if (trigger != null)
+		else if (trigger != null) {
 			for (ForgeDirection o : ForgeDirection.VALID_DIRECTIONS) {
 				TileEntity tile = container.getTile(o);
 
-				if (tile != null && !(tile instanceof TileGenericPipe) && trigger.isTriggerActive(tile, parameter))
-					return true;
+				if (tile != null && !(tile instanceof TileGenericPipe)) {
+					if (trigger.isTriggerActive(o.getOpposite(), tile, parameter))
+						return true;
+				}
 			}
+		}
 
 		return false;
 	}
@@ -477,8 +507,9 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 	public LinkedList<IAction> getActions() {
 		LinkedList<IAction> result = new LinkedList<IAction>();
 
-		if (hasGate())
+		if (hasGate()) {
 			gate.addActions(result);
+		}
 
 		return result;
 	}
@@ -493,15 +524,15 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 
 	public void resetGate() {
 		gate = null;
-		activatedTriggers = new Trigger[activatedTriggers.length];
+		activatedTriggers = new ITrigger[activatedTriggers.length];
 		triggerParameters = new ITriggerParameter[triggerParameters.length];
-		activatedActions = new Action[activatedActions.length];
+		activatedActions = new IAction[activatedActions.length];
 		broadcastSignal = new boolean[] { false, false, false, false };
 		if (broadcastRedstone) {
 			updateNeighbors(true);
 		}
 		broadcastRedstone = false;
-		//worldObj.markBlockNeedsUpdate(xCoord, yCoord, zCoord);
+		// worldObj.markBlockNeedsUpdate(xCoord, yCoord, zCoord);
 		container.scheduleRenderUpdate();
 	}
 
@@ -519,6 +550,7 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 		gate.startResolution();
 
 		HashMap<Integer, Boolean> actions = new HashMap<Integer, Boolean>();
+		Multiset<Integer> actionCount = HashMultiset.create();
 
 		// Computes the actions depending on the triggers
 		for (int it = 0; it < 8; ++it) {
@@ -526,13 +558,16 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 			IAction action = activatedActions[it];
 			ITriggerParameter parameter = triggerParameters[it];
 
-			if (trigger != null && action != null)
-				if (!actions.containsKey(action.getId()))
+			if (trigger != null && action != null) {
+				actionCount.add(action.getId());
+				if (!actions.containsKey(action.getId())) {
 					actions.put(action.getId(), isNearbyTriggerActive(trigger, parameter));
-				else if (gate.getConditional() == GateConditional.AND)
+				} else if (gate.getConditional() == GateConditional.AND) {
 					actions.put(action.getId(), actions.get(action.getId()) && isNearbyTriggerActive(trigger, parameter));
-				else
+				} else {
 					actions.put(action.getId(), actions.get(action.getId()) || isNearbyTriggerActive(trigger, parameter));
+				}
+			}
 		}
 
 		// Activate the actions
@@ -540,19 +575,21 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 			if (actions.get(i)) {
 
 				// Custom gate actions take precedence over defaults.
-				if (gate.resolveAction(ActionManager.actions[i]))
+				if (gate.resolveAction(ActionManager.actions[i], actionCount.count(i))) {
 					continue;
+				}
 
-				if (ActionManager.actions[i] instanceof ActionRedstoneOutput)
+				if (ActionManager.actions[i] instanceof ActionRedstoneOutput) {
 					broadcastRedstone = true;
-				else if (ActionManager.actions[i] instanceof ActionSignalOutput)
+				} else if (ActionManager.actions[i] instanceof ActionSignalOutput) {
 					broadcastSignal[((ActionSignalOutput) ActionManager.actions[i]).color.ordinal()] = true;
-				else
+				} else {
 					for (int a = 0; a < container.tileBuffer.length; ++a)
 						if (container.tileBuffer[a].getTile() instanceof IActionReceptor) {
 							IActionReceptor recept = (IActionReceptor) container.tileBuffer[a].getTile();
 							recept.actionActivated(ActionManager.actions[i]);
 						}
+				}
 			}
 
 		actionsActivated(actions);
@@ -564,7 +601,7 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 
 		for (int i = 0; i < oldBroadcastSignal.length; ++i)
 			if (oldBroadcastSignal[i] != broadcastSignal[i]) {
-				//worldObj.markBlockNeedsUpdate(xCoord, yCoord, zCoord);
+				// worldObj.markBlockNeedsUpdate(xCoord, yCoord, zCoord);
 				container.scheduleRenderUpdate();
 				updateSignalState();
 				break;
@@ -593,8 +630,8 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 		if (!tilePipe.pipe.wireSet[color.ordinal()])
 			return false;
 
-		return (tilePipe.pipe.transport instanceof PipeTransportStructure || transport instanceof PipeTransportStructure || Utils
-				.checkPipesConnections(container, tile));
+		return (tilePipe.pipe.transport instanceof PipeTransportStructure || transport instanceof PipeTransportStructure || Utils.checkPipesConnections(
+				container, tile));
 	}
 
 	public void dropContents() {
@@ -618,8 +655,9 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 
 				Connections_num++;
 
-				if (Connections_num == 1)
+				if (Connections_num == 1) {
 					target_orientation = o;
+				}
 			}
 
 		if (Connections_num > 1 || Connections_num == 0)
@@ -633,29 +671,30 @@ public abstract class Pipe implements IPipe, IDropControlInventory {
 		return logic.doDrop();
 	}
 
-	public boolean isGateActive(){
-		for (boolean b : broadcastSignal){
-			if (b) return true;
+	public boolean isGateActive() {
+		for (boolean b : broadcastSignal) {
+			if (b)
+				return true;
 		}
 		return broadcastRedstone;
 	}
 
-
 	/**
 	 * Called when TileGenericPipe.invalidate() is called
 	 */
-	public void invalidate() {}
+	public void invalidate() {
+	}
 
 	/**
 	 * Called when TileGenericPipe.validate() is called
 	 */
-	public void validate() {}
-
+	public void validate() {
+	}
 
 	/**
 	 * Called when TileGenericPipe.onChunkUnload is called
 	 */
-	public void onChunkUnload() {}
+	public void onChunkUnload() {
+	}
 
 }
-

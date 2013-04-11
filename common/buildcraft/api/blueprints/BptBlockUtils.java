@@ -11,12 +11,12 @@ package buildcraft.api.blueprints;
 
 import java.util.LinkedList;
 
+import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 
-import net.minecraft.src.IInventory;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.NBTTagCompound;
-import net.minecraft.src.NBTTagList;
-
+@Deprecated
 public class BptBlockUtils {
 
 	public static void requestInventoryContents(BptSlotInfo slot, IBptContext context, LinkedList<ItemStack> requirements) {
@@ -50,9 +50,8 @@ public class BptBlockUtils {
 	public static ItemStack[] getItemStacks(BptSlotInfo slot, IBptContext context) {
 		NBTTagList list = (NBTTagList) slot.cpt.getTag("inv");
 
-		if (list == null) {
+		if (list == null)
 			return new ItemStack[0];
-		}
 
 		ItemStack stacks[] = new ItemStack[list.tagCount()];
 

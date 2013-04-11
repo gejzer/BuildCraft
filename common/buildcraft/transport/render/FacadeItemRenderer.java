@@ -1,18 +1,18 @@
 package buildcraft.transport.render;
 
+import net.minecraft.block.Block;
+import net.minecraft.client.renderer.RenderBlocks;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.Icon;
+import net.minecraftforge.client.IItemRenderer;
+
 import org.lwjgl.opengl.GL11;
 
 import buildcraft.BuildCraftTransport;
-import buildcraft.core.DefaultProps;
 import buildcraft.core.utils.Utils;
 import buildcraft.transport.ItemFacade;
-
-import net.minecraft.src.Block;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.RenderBlocks;
-import net.minecraft.src.Tessellator;
-import net.minecraftforge.client.ForgeHooksClient;
-import net.minecraftforge.client.IItemRenderer;
+import buildcraft.transport.PipeIconProvider;
 
 public class FacadeItemRenderer implements IItemRenderer {
 
@@ -24,52 +24,49 @@ public class FacadeItemRenderer implements IItemRenderer {
 		Tessellator tessellator = Tessellator.instance;
 
 		Block block = Block.blocksList[decodedBlockId];
-		if (block == null){
+		if (block == null)
 			return;
-		}
 
-		//Render Facade
+		// Render Facade
 		GL11.glPushMatrix();
-		ForgeHooksClient.bindTexture(block.getTextureFile(), 0);
-		block.setBlockBounds(0F, 0F, 1F - 1F/16F, 1F, 1F, 1F);
-        render.func_83018_a(block);
+		block.setBlockBounds(0F, 0F, 1F - 1F / 16F, 1F, 1F, 1F);
+		render.setRenderBoundsFromBlock(block);
 		GL11.glTranslatef(translateX, translateY, translateZ);
 
 		tessellator.startDrawingQuads();
 		tessellator.setNormal(0.0F, -1F, 0.0F);
-		render.renderBottomFace(block, 0.0D, 0.0D, 0.0D, block.getBlockTextureFromSideAndMetadata(0, decodedMeta));
+		render.renderBottomFace(block, 0.0D, 0.0D, 0.0D, block.getIcon(0, decodedMeta));
 		tessellator.draw();
 		tessellator.startDrawingQuads();
 		tessellator.setNormal(0.0F, 1.0F, 0.0F);
-		render.renderTopFace(block, 0.0D, 0.0D, 0.0D, block.getBlockTextureFromSideAndMetadata(1, decodedMeta));
+		render.renderTopFace(block, 0.0D, 0.0D, 0.0D, block.getIcon(1, decodedMeta));
 		tessellator.draw();
 		tessellator.startDrawingQuads();
 		tessellator.setNormal(0.0F, 0.0F, -1F);
-		render.renderEastFace(block, 0.0D, 0.0D, 0.0D, block.getBlockTextureFromSideAndMetadata(2, decodedMeta));
+		render.renderEastFace(block, 0.0D, 0.0D, 0.0D, block.getIcon(2, decodedMeta));
 		tessellator.draw();
 		tessellator.startDrawingQuads();
 		tessellator.setNormal(0.0F, 0.0F, 1.0F);
-		render.renderWestFace(block, 0.0D, 0.0D, 0.0D, block.getBlockTextureFromSideAndMetadata(3, decodedMeta));
+		render.renderWestFace(block, 0.0D, 0.0D, 0.0D, block.getIcon(3, decodedMeta));
 		tessellator.draw();
 		tessellator.startDrawingQuads();
 		tessellator.setNormal(-1F, 0.0F, 0.0F);
-		render.renderNorthFace(block, 0.0D, 0.0D, 0.0D, block.getBlockTextureFromSideAndMetadata(4, decodedMeta));
+		render.renderNorthFace(block, 0.0D, 0.0D, 0.0D, block.getIcon(4, decodedMeta));
 		tessellator.draw();
 		tessellator.startDrawingQuads();
 		tessellator.setNormal(1.0F, 0.0F, 0.0F);
-		render.renderSouthFace(block, 0.0D, 0.0D, 0.0D, block.getBlockTextureFromSideAndMetadata(5, decodedMeta));
+		render.renderSouthFace(block, 0.0D, 0.0D, 0.0D, block.getIcon(5, decodedMeta));
 		tessellator.draw();
 		block.setBlockBounds(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
 		GL11.glPopMatrix();
 
-
-		//Render StructurePipe
-		ForgeHooksClient.bindTexture(DefaultProps.TEXTURE_BLOCKS, 0);
+		// Render StructurePipe
 		block = BuildCraftTransport.genericPipeBlock;
-		int textureID = 7 * 16 + 13; //Structure pipe
-		block.setBlockBounds(Utils.pipeMinPos, Utils.pipeMinPos, Utils.pipeMinPos, Utils.pipeMaxPos, Utils.pipeMaxPos, Utils.pipeMaxPos - 1F/16F);
+		Icon textureID = BuildCraftTransport.instance.pipeIconProvider.getIcon(PipeIconProvider.PipeStructureCobblestone); // Structure pipe
+
+		block.setBlockBounds(Utils.pipeMinPos, Utils.pipeMinPos, Utils.pipeMinPos, Utils.pipeMaxPos, Utils.pipeMaxPos, Utils.pipeMaxPos - 1F / 16F);
 		block.setBlockBoundsForItemRender();
-        render.func_83018_a(block);
+		render.setRenderBoundsFromBlock(block);
 		GL11.glTranslatef(translateX, translateY, translateZ + 0.25F);
 
 		tessellator.startDrawingQuads();
@@ -100,15 +97,17 @@ public class FacadeItemRenderer implements IItemRenderer {
 		block.setBlockBounds(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
 	}
 
-
 	@Override
 	public boolean handleRenderType(ItemStack item, ItemRenderType type) {
-		switch (type){
-			case ENTITY: return true;
-			case EQUIPPED: return true;
-			case INVENTORY: return true;
-			default:
-				return false;
+		switch (type) {
+		case ENTITY:
+			return true;
+		case EQUIPPED:
+			return true;
+		case INVENTORY:
+			return true;
+		default:
+			return false;
 		}
 	}
 

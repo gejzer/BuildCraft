@@ -9,86 +9,39 @@
 
 package buildcraft.factory;
 
-import buildcraft.BuildCraftCore;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.Container;
+import net.minecraft.inventory.ICrafting;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.ForgeDirection;
 import net.minecraftforge.liquids.ILiquidTank;
 import net.minecraftforge.liquids.ITankContainer;
 import net.minecraftforge.liquids.LiquidContainerRegistry;
 import net.minecraftforge.liquids.LiquidStack;
 import net.minecraftforge.liquids.LiquidTank;
+import buildcraft.BuildCraftCore;
 import buildcraft.api.core.SafeTimeTracker;
 import buildcraft.api.power.IPowerProvider;
 import buildcraft.api.power.IPowerReceptor;
 import buildcraft.api.power.PowerFramework;
 import buildcraft.api.recipes.RefineryRecipe;
 import buildcraft.core.IMachine;
-import buildcraft.core.network.TileNetworkData;
+import buildcraft.core.network.PacketPayload;
+import buildcraft.core.network.PacketUpdate;
 import buildcraft.core.proxy.CoreProxy;
-import net.minecraft.src.Container;
-import net.minecraft.src.EntityPlayer;
-import net.minecraft.src.ICrafting;
-import net.minecraft.src.IInventory;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.NBTTagCompound;
 
 public class TileRefinery extends TileMachine implements ITankContainer, IPowerReceptor, IInventory, IMachine {
 
 	private int[] filters = new int[2];
+	private int[] filtersMeta = new int[2];
 
 	public static int LIQUID_PER_SLOT = LiquidContainerRegistry.BUCKET_VOLUME * 4;
 
-	public static class Slot {
-
-		@TileNetworkData
-		public int liquidId = 0;
-		@TileNetworkData
-		public int quantity = 0;
-
-		public int fill(ForgeDirection from, int amount, int id, boolean doFill) {
-			if (quantity != 0 && liquidId != id) {
-				return 0;
-			} else if (quantity + amount <= LIQUID_PER_SLOT) {
-				if (doFill) {
-					quantity = quantity + amount;
-				}
-
-				liquidId = id;
-				return amount;
-			} else {
-				int used = LIQUID_PER_SLOT - quantity;
-
-				if (doFill) {
-					quantity = LIQUID_PER_SLOT;
-				}
-
-				liquidId = id;
-				return used;
-			}
-		}
-
-		public void writeFromNBT(NBTTagCompound nbttagcompound) {
-			nbttagcompound.setInteger("liquidId", liquidId);
-			nbttagcompound.setInteger("quantity", quantity);
-		}
-
-		public void readFromNBT(NBTTagCompound nbttagcompound) {
-			liquidId = nbttagcompound.getInteger("liquidId");
-
-			if (liquidId != 0) {
-				quantity = nbttagcompound.getInteger("quantity");
-			} else {
-				quantity = 0;
-			}
-		}
-	}
-
-	@TileNetworkData
-	public Slot slot1 = new Slot();
-	@TileNetworkData
-	public Slot slot2 = new Slot();
-	@TileNetworkData
-	public Slot result = new Slot();
-	@TileNetworkData
+	public LiquidTank ingredient1 = new LiquidTank(LIQUID_PER_SLOT);
+	public LiquidTank ingredient2 = new LiquidTank(LIQUID_PER_SLOT);
+	public LiquidTank result = new LiquidTank(LIQUID_PER_SLOT);
 	public float animationSpeed = 1;
 	private int animationStage = 0;
 
@@ -102,10 +55,12 @@ public class TileRefinery extends TileMachine implements ITankContainer, IPowerR
 
 	public TileRefinery() {
 		powerProvider = PowerFramework.currentFramework.createPowerProvider();
-		powerProvider.configure(20, 25, 25, 25, 1000);
+		powerProvider.configure(20, 25, 100, 25, 1000);
 
 		filters[0] = 0;
 		filters[1] = 0;
+		filtersMeta[0] = 0;
+		filtersMeta[1] = 0;
 	}
 
 	@Override
@@ -170,7 +125,6 @@ public class TileRefinery extends TileMachine implements ITankContainer, IPowerR
 			return;
 
 		} else if (CoreProxy.proxy.isSimulating(worldObj) && updateNetworkTime.markTimeIfDelay(worldObj, 2 * BuildCraftCore.updateFactor)) {
-			System.out.printf("Server Anim state: %d %f\n", animationStage, animationSpeed);
 			sendNetworkUpdate();
 		}
 
@@ -178,19 +132,19 @@ public class TileRefinery extends TileMachine implements ITankContainer, IPowerR
 
 		RefineryRecipe currentRecipe = null;
 
-		currentRecipe = RefineryRecipe.findRefineryRecipe(new LiquidStack(slot1.liquidId, slot1.quantity, 0), new LiquidStack(slot2.liquidId, slot2.quantity, 0));
+		currentRecipe = RefineryRecipe.findRefineryRecipe(ingredient1.getLiquid(), ingredient2.getLiquid());
 
 		if (currentRecipe == null) {
 			decreaseAnimation();
 			return;
 		}
 
-		if (result.quantity != 0 && result.liquidId != currentRecipe.result.itemID) {
+		if (result.getLiquid() != null && result.getLiquid().amount != 0 && !result.getLiquid().isLiquidEqual(currentRecipe.result)) {
 			decreaseAnimation();
 			return;
 		}
 
-		if (result.quantity + currentRecipe.result.amount > LIQUID_PER_SLOT) {
+		if (result.fill(currentRecipe.result, false) != currentRecipe.result.amount) {
 			decreaseAnimation();
 			return;
 		}
@@ -208,36 +162,35 @@ public class TileRefinery extends TileMachine implements ITankContainer, IPowerR
 			decreaseAnimation();
 		}
 
-		if (!time.markTimeIfDelay(worldObj, currentRecipe.delay)) {
+		if (!time.markTimeIfDelay(worldObj, currentRecipe.delay))
 			return;
-		}
 
 		float energyUsed = powerProvider.useEnergy(currentRecipe.energy, currentRecipe.energy, true);
 
 		if (energyUsed != 0) {
 			if (consumeInput(currentRecipe.ingredient1) && consumeInput(currentRecipe.ingredient2)) {
-				result.liquidId = currentRecipe.result.itemID;
-				result.quantity += currentRecipe.result.amount;
+				result.fill(currentRecipe.result, true);
 			}
 		}
 	}
 
 	private boolean containsInput(LiquidStack liquid) {
-		if(liquid == null)
+		if (liquid == null)
 			return true;
 
-		return new LiquidStack(slot1.liquidId, slot1.quantity, 0).containsLiquid(liquid) || new LiquidStack(slot2.liquidId, slot2.quantity, 0).containsLiquid(liquid);
+		return (ingredient1.getLiquid() != null && ingredient1.getLiquid().containsLiquid(liquid))
+				|| (ingredient2.getLiquid() != null && ingredient2.getLiquid().containsLiquid(liquid));
 	}
 
 	private boolean consumeInput(LiquidStack liquid) {
-		if(liquid == null)
+		if (liquid == null)
 			return true;
 
-		if(new LiquidStack(slot1.liquidId, slot1.quantity, 0).containsLiquid(liquid)) {
-			slot1.quantity -= liquid.amount;
+		if (ingredient1.getLiquid() != null && ingredient1.getLiquid().containsLiquid(liquid)) {
+			ingredient1.drain(liquid.amount, true);
 			return true;
-		} else if(new LiquidStack(slot2.liquidId, slot2.quantity, 0).containsLiquid(liquid)) {
-			slot2.quantity -= liquid.amount;
+		} else if (ingredient2.getLiquid() != null && ingredient2.getLiquid().containsLiquid(liquid)) {
+			ingredient2.drain(liquid.amount, true);
 			return true;
 		}
 
@@ -259,41 +212,72 @@ public class TileRefinery extends TileMachine implements ITankContainer, IPowerR
 		return true;
 	}
 
+	// for compatibility
+	private LiquidStack readSlotNBT(NBTTagCompound nbttagcompound) {
+		int liquidId = nbttagcompound.getInteger("liquidId");
+		int quantity = 0;
+		int liquidMeta = 0;
+
+		if (liquidId != 0) {
+			quantity = nbttagcompound.getInteger("quantity");
+			liquidMeta = nbttagcompound.getInteger("liquidMeta");
+		} else {
+			quantity = 0;
+		}
+
+		if (quantity > 0)
+			return new LiquidStack(liquidId, quantity, liquidMeta);
+
+		return null;
+	}
+
 	@Override
 	public void readFromNBT(NBTTagCompound nbttagcompound) {
 		super.readFromNBT(nbttagcompound);
 
 		if (nbttagcompound.hasKey("slot1")) {
-			slot1.readFromNBT(nbttagcompound.getCompoundTag("slot1"));
-			slot2.readFromNBT(nbttagcompound.getCompoundTag("slot2"));
-			result.readFromNBT(nbttagcompound.getCompoundTag("result"));
+			ingredient1.setLiquid(readSlotNBT(nbttagcompound.getCompoundTag("slot1")));
+			ingredient2.setLiquid(readSlotNBT(nbttagcompound.getCompoundTag("slot2")));
+			result.setLiquid(readSlotNBT(nbttagcompound.getCompoundTag("result")));
+		} else {
+			if (nbttagcompound.hasKey("ingredient1")) {
+				ingredient1.setLiquid(LiquidStack.loadLiquidStackFromNBT(nbttagcompound.getCompoundTag("ingredient1")));
+			}
+			if (nbttagcompound.hasKey("ingredient2")) {
+				ingredient2.setLiquid(LiquidStack.loadLiquidStackFromNBT(nbttagcompound.getCompoundTag("ingredient2")));
+			}
+			if (nbttagcompound.hasKey("result")) {
+				result.setLiquid(LiquidStack.loadLiquidStackFromNBT(nbttagcompound.getCompoundTag("result")));
+			}
 		}
 
 		animationStage = nbttagcompound.getInteger("animationStage");
 		animationSpeed = nbttagcompound.getFloat("animationSpeed");
 
 		PowerFramework.currentFramework.loadPowerProvider(this, nbttagcompound);
-		powerProvider.configure(20, 25, 25, 25, 1000);
+		powerProvider.configure(20, 25, 100, 25, 1000);
 
 		filters[0] = nbttagcompound.getInteger("filters_0");
 		filters[1] = nbttagcompound.getInteger("filters_1");
+		filtersMeta[0] = nbttagcompound.getInteger("filtersMeta_0");
+		filtersMeta[1] = nbttagcompound.getInteger("filtersMeta_1");
 	}
 
 	@Override
 	public void writeToNBT(NBTTagCompound nbttagcompound) {
 		super.writeToNBT(nbttagcompound);
 
-		NBTTagCompound NBTslot1 = new NBTTagCompound();
-		NBTTagCompound NBTslot2 = new NBTTagCompound();
-		NBTTagCompound NBTresult = new NBTTagCompound();
+		if (ingredient1.getLiquid() != null) {
+			nbttagcompound.setTag("ingredient1", ingredient1.getLiquid().writeToNBT(new NBTTagCompound()));
+		}
 
-		slot1.writeFromNBT(NBTslot1);
-		slot2.writeFromNBT(NBTslot2);
-		result.writeFromNBT(NBTresult);
+		if (ingredient2.getLiquid() != null) {
+			nbttagcompound.setTag("ingredient2", ingredient2.getLiquid().writeToNBT(new NBTTagCompound()));
+		}
 
-		nbttagcompound.setTag("slot1", NBTslot1);
-		nbttagcompound.setTag("slot2", NBTslot2);
-		nbttagcompound.setTag("result", NBTresult);
+		if (result.getLiquid() != null) {
+			nbttagcompound.setTag("result", result.getLiquid().writeToNBT(new NBTTagCompound()));
+		}
 
 		nbttagcompound.setInteger("animationStage", animationStage);
 		nbttagcompound.setFloat("animationSpeed", animationSpeed);
@@ -301,6 +285,8 @@ public class TileRefinery extends TileMachine implements ITankContainer, IPowerR
 
 		nbttagcompound.setInteger("filters_0", filters[0]);
 		nbttagcompound.setInteger("filters_1", filters[1]);
+		nbttagcompound.setInteger("filtersMeta_0", filtersMeta[0]);
+		nbttagcompound.setInteger("filtersMeta_1", filtersMeta[1]);
 	}
 
 	public int getAnimationStage() {
@@ -352,15 +338,25 @@ public class TileRefinery extends TileMachine implements ITankContainer, IPowerR
 		}
 	}
 
-	@Override public void openChest() {}
-	@Override public void closeChest() {}
+	@Override
+	public void openChest() {
+	}
 
-	public void setFilter(int number, int liquidId) {
+	@Override
+	public void closeChest() {
+	}
+
+	public void setFilter(int number, int liquidId, int liquidMeta) {
 		filters[number] = liquidId;
+		filtersMeta[number] = liquidMeta;
 	}
 
 	public int getFilter(int number) {
 		return filters[number];
+	}
+
+	public int getFilterMeta(int number) {
+		return filtersMeta[number];
 	}
 
 	@Override
@@ -377,30 +373,42 @@ public class TileRefinery extends TileMachine implements ITankContainer, IPowerR
 		case 1:
 			filters[1] = j;
 			break;
+		case 2:
+			filtersMeta[0] = j;
+			break;
+		case 3:
+			filtersMeta[1] = j;
+			break;
 		}
 	}
 
 	public void sendGUINetworkData(Container container, ICrafting iCrafting) {
-		iCrafting.updateCraftingInventoryInfo(container, 0, filters[0]);
-		iCrafting.updateCraftingInventoryInfo(container, 1, filters[1]);
+		iCrafting.sendProgressBarUpdate(container, 0, filters[0]);
+		iCrafting.sendProgressBarUpdate(container, 1, filters[1]);
+		iCrafting.sendProgressBarUpdate(container, 2, filtersMeta[0]);
+		iCrafting.sendProgressBarUpdate(container, 3, filtersMeta[1]);
 	}
 
 	/* ITANKCONTAINER */
 	@Override
 	public int fill(ForgeDirection from, LiquidStack resource, boolean doFill) {
 		int used = 0;
+		LiquidStack resourceUsing = resource.copy();
 
 		if (filters[0] != 0 || filters[1] != 0) {
-			if (filters[0] == resource.itemID) {
-				used += slot1.fill(from, resource.amount, resource.itemID, doFill);
+			if (filters[0] == resource.itemID && filtersMeta[0] == resource.itemMeta) {
+				used += ingredient1.fill(resourceUsing, doFill);
 			}
 
-			if (filters[1] == resource.itemID) {
-				used += slot2.fill(from, resource.amount - used, resource.itemID, doFill);
+			resourceUsing.amount -= used;
+
+			if (filters[1] == resource.itemID && filtersMeta[1] == resource.itemMeta) {
+				used += ingredient2.fill(resourceUsing, doFill);
 			}
 		} else {
-			used += slot1.fill(from, resource.amount, resource.itemID, doFill);
-			used += slot2.fill(from, resource.amount - used, resource.itemID, doFill);
+			used += ingredient1.fill(resourceUsing, doFill);
+			resourceUsing.amount -= used;
+			used += ingredient2.fill(resourceUsing, doFill);
 		}
 
 		if (doFill && used > 0) {
@@ -413,7 +421,11 @@ public class TileRefinery extends TileMachine implements ITankContainer, IPowerR
 
 	@Override
 	public int fill(int tankIndex, LiquidStack resource, boolean doFill) {
-		/// FIXME: TileRefinery.Slot must die!
+
+		if (tankIndex == 0 && resource.itemID == filters[0] && resource.itemMeta == filtersMeta[0])
+			return ingredient1.fill(resource, doFill);
+		if (tankIndex == 1 && resource.itemID == filters[1] && resource.itemMeta == filtersMeta[1])
+			return ingredient2.fill(resource, doFill);
 		return 0;
 	}
 
@@ -424,43 +436,122 @@ public class TileRefinery extends TileMachine implements ITankContainer, IPowerR
 
 	@Override
 	public LiquidStack drain(int tankIndex, int maxEmpty, boolean doDrain) {
-		int res = 0;
+		if (tankIndex == 2)
+			return result.drain(maxEmpty, doDrain);
 
-		if (result.quantity >= maxEmpty) {
-			res = maxEmpty;
-
-			if (doDrain) {
-				result.quantity -= maxEmpty;
-			}
-		} else {
-			res = result.quantity;
-
-			if (doDrain) {
-				result.quantity = 0;
-			}
-		}
-
-		if (doDrain && res > 0) {
-			updateNetworkTime.markTime(worldObj);
-			sendNetworkUpdate();
-		}
-
-		return new LiquidStack(result.liquidId, res);
+		return null;
 	}
 
 	@Override
 	public ILiquidTank[] getTanks(ForgeDirection direction) {
-		return new ILiquidTank[] {
-				new LiquidTank(slot1.liquidId, slot1.quantity, LIQUID_PER_SLOT),
-				new LiquidTank(slot2.liquidId, slot2.quantity, LIQUID_PER_SLOT),
-				new LiquidTank(result.liquidId, result.quantity, LIQUID_PER_SLOT),
-		};
+		return new ILiquidTank[] { ingredient1, ingredient2, result };
 	}
 
 	@Override
 	public ILiquidTank getTank(ForgeDirection direction, LiquidStack type) {
-    	// TODO Auto-generated method stub
-		return null;
+		ForgeDirection dir = ForgeDirection.getOrientation(worldObj.getBlockMetadata(xCoord, yCoord, zCoord));
+
+		switch (direction) {
+			case NORTH:
+				switch (dir) {
+					case WEST:
+						return ingredient2;
+					case EAST:
+						return ingredient1;
+					default:
+						return null;
+				}
+			case SOUTH:
+				switch (dir) {
+					case WEST:
+						return ingredient1;
+					case EAST:
+						return ingredient2;
+					default:
+						return null;
+				}
+			case EAST:
+				switch (dir) {
+					case NORTH:
+						return ingredient2;
+					case SOUTH:
+						return ingredient1;
+					default:
+						return null;
+				}
+			case WEST:
+				switch (dir) {
+					case NORTH:
+						return ingredient1;
+					case SOUTH:
+						return ingredient2;
+					default:
+						return null;
+				}
+			case DOWN:
+				return result;
+			default:
+				return null;
+		}
 	}
 
+	// Network
+
+	@Override
+	public PacketPayload getPacketPayload() {
+		PacketPayload payload = new PacketPayload(9, 1, 0);
+		if (ingredient1.getLiquid() != null) {
+			payload.intPayload[0] = ingredient1.getLiquid().itemID;
+			payload.intPayload[1] = ingredient1.getLiquid().itemMeta;
+			payload.intPayload[2] = ingredient1.getLiquid().amount;
+		} else {
+			payload.intPayload[0] = 0;
+			payload.intPayload[1] = 0;
+			payload.intPayload[2] = 0;
+		}
+		if (ingredient2.getLiquid() != null) {
+			payload.intPayload[3] = ingredient2.getLiquid().itemID;
+			payload.intPayload[4] = ingredient2.getLiquid().itemMeta;
+			payload.intPayload[5] = ingredient2.getLiquid().amount;
+		} else {
+			payload.intPayload[3] = 0;
+			payload.intPayload[4] = 0;
+			payload.intPayload[5] = 0;
+		}
+		if (result.getLiquid() != null) {
+			payload.intPayload[6] = result.getLiquid().itemID;
+			payload.intPayload[7] = result.getLiquid().itemMeta;
+			payload.intPayload[8] = result.getLiquid().amount;
+		} else {
+			payload.intPayload[6] = 0;
+			payload.intPayload[7] = 0;
+			payload.intPayload[8] = 0;
+		}
+		payload.floatPayload[0] = animationSpeed;
+
+		return payload;
+	}
+
+	@Override
+	public void handleUpdatePacket(PacketUpdate packet) {
+		if (packet.payload.intPayload[0] > 0) {
+			ingredient1.setLiquid(new LiquidStack(packet.payload.intPayload[0], packet.payload.intPayload[2], packet.payload.intPayload[1]));
+		} else {
+			ingredient1.setLiquid(null);
+		}
+
+		if (packet.payload.intPayload[3] > 0) {
+			ingredient2.setLiquid(new LiquidStack(packet.payload.intPayload[3], packet.payload.intPayload[5], packet.payload.intPayload[4]));
+		} else {
+			ingredient2.setLiquid(null);
+		}
+
+		if (packet.payload.intPayload[6] > 0) {
+			result.setLiquid(new LiquidStack(packet.payload.intPayload[6], packet.payload.intPayload[8], packet.payload.intPayload[7]));
+		} else {
+			result.setLiquid(null);
+		}
+
+		animationSpeed = packet.payload.floatPayload[0];
+	}
 }

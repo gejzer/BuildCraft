@@ -11,34 +11,33 @@ package buildcraft.builders;
 
 import java.util.ArrayList;
 
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockContainer;
+import net.minecraft.block.material.Material;
+import net.minecraft.client.renderer.texture.IconRegister;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.Icon;
+import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.util.Vec3;
+import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.World;
 import buildcraft.BuildCraftBuilders;
 import buildcraft.BuildCraftCore;
-import buildcraft.builders.BuildersProxy;
-import buildcraft.core.DefaultProps;
+import buildcraft.core.CreativeTabBuildCraft;
 import buildcraft.core.utils.Utils;
-
-import net.minecraft.src.AxisAlignedBB;
-import net.minecraft.src.Block;
-import net.minecraft.src.BlockContainer;
-import net.minecraft.src.CreativeTabs;
-import net.minecraft.src.EntityPlayer;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.Material;
-import net.minecraft.src.MovingObjectPosition;
-import net.minecraft.src.TileEntity;
-import net.minecraft.src.Vec3;
-import net.minecraft.src.World;
-
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class BlockMarker extends BlockContainer {
 
 	public BlockMarker(int i) {
 		super(i, Material.circuits);
 
-		blockIndexInTexture = 3 * 16 + 9;
-
 		setLightValue(0.5F);
-		setCreativeTab(CreativeTabs.tabRedstone);
+		setCreativeTab(CreativeTabBuildCraft.tabBuildCraft);
 	}
 
 	@SuppressWarnings({ "all" })
@@ -133,7 +132,7 @@ public class BlockMarker extends BlockContainer {
 			}
 			if (flag) {
 				dropBlockAsItem(world, i, j, k, BuildCraftBuilders.markerBlock.blockID, 0);
-				world.setBlockWithNotify(i, j, k, 0);
+				world.setBlock(i, j, k, 0);
 			}
 		}
 	}
@@ -145,48 +144,44 @@ public class BlockMarker extends BlockContainer {
 
 	@Override
 	public boolean canPlaceBlockAt(World world, int i, int j, int k) {
-		if (BuildersProxy.canPlaceTorch(world, i - 1, j, k)) {
+		if (BuildersProxy.canPlaceTorch(world, i - 1, j, k))
 			return true;
-		}
-		if (BuildersProxy.canPlaceTorch(world, i + 1, j, k)) {
+		if (BuildersProxy.canPlaceTorch(world, i + 1, j, k))
 			return true;
-		}
-		if (BuildersProxy.canPlaceTorch(world, i, j, k - 1)) {
+		if (BuildersProxy.canPlaceTorch(world, i, j, k - 1))
 			return true;
-		}
-		if (BuildersProxy.canPlaceTorch(world, i, j, k + 1)) {
+		if (BuildersProxy.canPlaceTorch(world, i, j, k + 1))
 			return true;
-		}
-		if (BuildersProxy.canPlaceTorch(world, i, j - 1, k)) {
+		if (BuildersProxy.canPlaceTorch(world, i, j - 1, k))
 			return true;
-		}
 
 		return BuildersProxy.canPlaceTorch(world, i, j + 1, k);
 	}
 
 	@Override
-	public void func_85105_g(World world, int x, int y, int z, int par5) {
-		super.func_85105_g(world, x, y, z, par5);
-		int i1 = world.getBlockMetadata(x, y, z);
-		if (par5 == 1 && BuildersProxy.canPlaceTorch(world, x, y - 1, z)) {
-			i1 = 5;
+	public int onBlockPlaced(World world, int x, int y, int z, int side, float par6, float par7, float par8, int meta) {
+		super.onBlockPlaced(world, x, y, z, side, par6, par7, par8, meta);
+
+		if (side == 1 && BuildersProxy.canPlaceTorch(world, x, y - 1, z)) {
+			meta = 5;
 		}
-		if (par5 == 2 && BuildersProxy.canPlaceTorch(world, x, y, z + 1)) {
-			i1 = 4;
+		if (side == 2 && BuildersProxy.canPlaceTorch(world, x, y, z + 1)) {
+			meta = 4;
 		}
-		if (par5 == 3 && BuildersProxy.canPlaceTorch(world, x, y, z - 1)) {
-			i1 = 3;
+		if (side == 3 && BuildersProxy.canPlaceTorch(world, x, y, z - 1)) {
+			meta = 3;
 		}
-		if (par5 == 4 && BuildersProxy.canPlaceTorch(world, x + 1, y, z)) {
-			i1 = 2;
+		if (side == 4 && BuildersProxy.canPlaceTorch(world, x + 1, y, z)) {
+			meta = 2;
 		}
-		if (par5 == 5 && BuildersProxy.canPlaceTorch(world, x - 1, y, z)) {
-			i1 = 1;
+		if (side == 5 && BuildersProxy.canPlaceTorch(world, x - 1, y, z)) {
+			meta = 1;
 		}
-		if (par5 == 0 && BuildersProxy.canPlaceTorch(world, x, y + 1, z)) {
-			i1 = 0;
+		if (side == 0 && BuildersProxy.canPlaceTorch(world, x, y + 1, z)) {
+			meta = 0;
 		}
-		world.setBlockMetadataWithNotify(x, y, z, i1);
+
+		return meta;
 	}
 
 	@Override
@@ -194,17 +189,17 @@ public class BlockMarker extends BlockContainer {
 		super.onBlockAdded(world, i, j, k);
 
 		if (BuildersProxy.canPlaceTorch(world, i - 1, j, k)) {
-			world.setBlockMetadataWithNotify(i, j, k, 1);
+			world.setBlockMetadataWithNotify(i, j, k, 1,1);
 		} else if (BuildersProxy.canPlaceTorch(world, i + 1, j, k)) {
-			world.setBlockMetadataWithNotify(i, j, k, 2);
+			world.setBlockMetadataWithNotify(i, j, k, 2,1);
 		} else if (BuildersProxy.canPlaceTorch(world, i, j, k - 1)) {
-			world.setBlockMetadataWithNotify(i, j, k, 3);
+			world.setBlockMetadataWithNotify(i, j, k, 3,1);
 		} else if (BuildersProxy.canPlaceTorch(world, i, j, k + 1)) {
-			world.setBlockMetadataWithNotify(i, j, k, 4);
+			world.setBlockMetadataWithNotify(i, j, k, 4,1);
 		} else if (BuildersProxy.canPlaceTorch(world, i, j - 1, k)) {
-			world.setBlockMetadataWithNotify(i, j, k, 5);
+			world.setBlockMetadataWithNotify(i, j, k, 5,1);
 		} else if (BuildersProxy.canPlaceTorch(world, i, j + 1, k)) {
-			world.setBlockMetadataWithNotify(i, j, k, 0);
+			world.setBlockMetadataWithNotify(i, j, k, 0,1);
 		}
 
 		dropTorchIfCantStay(world, i, j, k);
@@ -213,21 +208,28 @@ public class BlockMarker extends BlockContainer {
 	private boolean dropTorchIfCantStay(World world, int i, int j, int k) {
 		if (!canPlaceBlockAt(world, i, j, k)) {
 			dropBlockAsItem(world, i, j, k, BuildCraftBuilders.markerBlock.blockID, 0);
-			world.setBlockWithNotify(i, j, k, 0);
+			world.setBlock(i, j, k, 0);
 			return false;
-		} else {
+		} else
 			return true;
-		}
-	}
-
-	@Override
-	public String getTextureFile() {
-		return DefaultProps.TEXTURE_BLOCKS;
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public void addCreativeItems(ArrayList itemList) {
 		itemList.add(new ItemStack(this));
+	}
+
+	@Override
+	@SideOnly(Side.CLIENT)
+	public void registerIcons(IconRegister par1IconRegister)
+	{
+	    this.blockIcon = par1IconRegister.registerIcon("buildcraft:blockMarker");
+	}
+	
+	@Override
+	@SideOnly(Side.CLIENT)
+	public Icon getBlockTexture(IBlockAccess par1iBlockAccess, int par2, int par3, int par4, int par5) {
+		return this.blockIcon;
 	}
 }

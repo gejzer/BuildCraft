@@ -9,17 +9,15 @@
 
 package buildcraft.core.triggers;
 
-import buildcraft.api.gates.ITriggerParameter;
-import buildcraft.api.gates.Trigger;
-import buildcraft.core.DefaultProps;
-import net.minecraft.src.TileEntity;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.ForgeDirection;
 import net.minecraftforge.liquids.ILiquidTank;
 import net.minecraftforge.liquids.ITankContainer;
 import net.minecraftforge.liquids.LiquidContainerRegistry;
 import net.minecraftforge.liquids.LiquidStack;
+import buildcraft.api.gates.ITriggerParameter;
 
-public class TriggerLiquidContainer extends Trigger {
+public class TriggerLiquidContainer extends BCTrigger {
 
 	public enum State {
 		Empty, Contains, Space, Full
@@ -30,20 +28,6 @@ public class TriggerLiquidContainer extends Trigger {
 	public TriggerLiquidContainer(int id, State state) {
 		super(id);
 		this.state = state;
-	}
-
-	@Override
-	public int getIndexInTexture() {
-		switch (state) {
-		case Empty:
-			return 2 * 16 + 0;
-		case Contains:
-			return 2 * 16 + 1;
-		case Space:
-			return 2 * 16 + 2;
-		default:
-			return 2 * 16 + 3;
-		}
 	}
 
 	@Override
@@ -69,14 +53,19 @@ public class TriggerLiquidContainer extends Trigger {
 	}
 
 	@Override
-	public boolean isTriggerActive(TileEntity tile, ITriggerParameter parameter) {
+	public boolean isTriggerActive(ForgeDirection side, TileEntity tile, ITriggerParameter parameter) {
 		if (tile instanceof ITankContainer) {
 			ITankContainer container = (ITankContainer) tile;
 
 			LiquidStack searchedLiquid = null;
 
-			if (parameter != null && parameter.getItem() != null)
+			if (parameter != null && parameter.getItem() != null) {
 				searchedLiquid = LiquidContainerRegistry.getLiquidForFilledItem(parameter.getItem());
+			}
+
+			if (searchedLiquid != null) {
+				searchedLiquid.amount = 1;
+			}
 
 			ILiquidTank[] liquids = container.getTanks(ForgeDirection.UNKNOWN);
 
@@ -85,36 +74,44 @@ public class TriggerLiquidContainer extends Trigger {
 
 			switch (state) {
 			case Empty:
-
-				if (liquids != null && liquids.length > 0) {
-					for (ILiquidTank c : liquids)
-						if (c.getLiquid() != null && c.getLiquid().amount != 0)
+				for (ILiquidTank c : liquids) {
+					if (searchedLiquid != null) {
+						LiquidStack drained = c.drain(1, false);
+						if (drained != null && searchedLiquid.isLiquidEqual(drained))
 							return false;
+					} else if (c.getLiquid() != null && c.getLiquid().amount > 0)
+						return false;
+				}
 
-					return true;
-				} else
-					return false;
+				return true;
 			case Contains:
-				for (ILiquidTank c : liquids)
-					if (c.getLiquid() != null && c.getLiquid().amount != 0)
+				for (ILiquidTank c : liquids) {
+					if (c.getLiquid() != null && c.getLiquid().amount != 0) {
 						if (searchedLiquid == null || searchedLiquid.isLiquidEqual(c.getLiquid()))
 							return true;
+					}
+				}
 
 				return false;
 
 			case Space:
-				for (ILiquidTank c : liquids)
-					if (c.getLiquid() == null || c.getLiquid().amount == 0)
-						return true;
-					else if (c.getLiquid().amount < c.getCapacity())
-						if (searchedLiquid == null || searchedLiquid.isLiquidEqual(c.getLiquid()))
+				for (ILiquidTank c : liquids) {
+					if (searchedLiquid != null) {
+						if (c.fill(searchedLiquid, false) > 0)
 							return true;
+					} else if (c.getLiquid() == null || c.getLiquid().amount < c.getCapacity())
+						return true;
+				}
 
 				return false;
 			case Full:
-				for (ILiquidTank c : liquids)
-					if (c.getLiquid() == null || c.getLiquid().amount < c.getCapacity())
+				for (ILiquidTank c : liquids) {
+					if (searchedLiquid != null) {
+						if (c.fill(searchedLiquid, false) > 0)
+							return false;
+					} else if (c.getLiquid() == null || c.getLiquid().amount < c.getCapacity())
 						return false;
+				}
 
 				return true;
 			}
@@ -124,7 +121,16 @@ public class TriggerLiquidContainer extends Trigger {
 	}
 
 	@Override
-	public String getTextureFile() {
-		return DefaultProps.TEXTURE_TRIGGERS;
+	public int getIconIndex() {
+		switch (state) {
+		case Empty:
+			return ActionTriggerIconProvider.Trigger_LiquidContainer_Empty;
+		case Contains:
+			return ActionTriggerIconProvider.Trigger_LiquidContainer_Contains;
+		case Space:
+			return ActionTriggerIconProvider.Trigger_LiquidContainer_Space;
+		default:
+			return ActionTriggerIconProvider.Trigger_LiquidContainer_Full;
+		}
 	}
 }

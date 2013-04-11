@@ -1,14 +1,13 @@
 package buildcraft.core.utils;
 
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.ForgeDirection;
-import net.minecraft.src.EntityPlayer;
-import net.minecraft.src.IInventory;
-import net.minecraft.src.ItemStack;
 import net.minecraftforge.common.ISidedInventory;
 
 /**
- * This class is responsible for abstracting an ISidedInventory as a normal
- * IInventory
+ * This class is responsible for abstracting an ISidedInventory as a normal IInventory
  *
  * @author Krapht
  *
@@ -79,4 +78,18 @@ public class SidedInventoryAdapter implements IInventory {
 	public ItemStack getStackInSlotOnClosing(int slot) {
 		return _sidedInventory.getStackInSlotOnClosing(slot + _slotOffset);
 	}
+
+    @Override
+    public boolean isInvNameLocalized()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public boolean isStackValidForSlot(int i, ItemStack itemstack)
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
 }

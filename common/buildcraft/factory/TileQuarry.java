@@ -9,19 +9,25 @@
 
 package buildcraft.factory;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import com.google.common.collect.Sets;
-
-import cpw.mods.fml.common.network.PacketDispatcher;
-import cpw.mods.fml.common.network.Player;
-
+import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.packet.Packet3Chat;
+import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraftforge.common.ForgeChunkManager;
+import net.minecraftforge.common.ForgeChunkManager.Ticket;
+import net.minecraftforge.common.ForgeChunkManager.Type;
+import net.minecraftforge.common.ForgeDirection;
+import buildcraft.BuildCraftCore;
 import buildcraft.BuildCraftFactory;
 import buildcraft.api.core.IAreaProvider;
 import buildcraft.api.core.LaserKind;
-import net.minecraftforge.common.ForgeDirection;
 import buildcraft.api.power.IPowerProvider;
 import buildcraft.api.power.IPowerReceptor;
 import buildcraft.api.power.PowerFramework;
@@ -40,16 +46,11 @@ import buildcraft.core.proxy.CoreProxy;
 import buildcraft.core.utils.BlockUtil;
 import buildcraft.core.utils.Utils;
 
-import net.minecraft.src.AxisAlignedBB;
-import net.minecraft.src.ChunkCoordIntPair;
-import net.minecraft.src.EntityItem;
-import net.minecraft.src.EntityPlayer;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.NBTTagCompound;
-import net.minecraft.src.Packet3Chat;
-import net.minecraftforge.common.ForgeChunkManager;
-import net.minecraftforge.common.ForgeChunkManager.Ticket;
-import net.minecraftforge.common.ForgeChunkManager.Type;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
+import cpw.mods.fml.common.network.PacketDispatcher;
+import cpw.mods.fml.common.network.Player;
 
 public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor, IPipeConnection, IBuilderInventory {
 	public @TileNetworkData
@@ -65,7 +66,6 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 	public @TileNetworkData
 	boolean builderDone = false;
 
-
 	public EntityRobot builder;
 	BptBuilderBase bluePrintBuilder;
 
@@ -75,11 +75,11 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 
 	boolean isDigging = false;
 
-	public static int MAX_ENERGY = 15000;
+	public static final int MAX_ENERGY = 15000;
 
 	public TileQuarry() {
 		powerProvider = PowerFramework.currentFramework.createPowerProvider();
-		powerProvider.configure(20, 25, 25, 25, MAX_ENERGY);
+		powerProvider.configure(20, 25, 100, 25, MAX_ENERGY);
 	}
 
 	public void createUtilsIfNeeded() {
@@ -96,13 +96,13 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 
 			box.deleteLasers();
 
-			if (arm == null)
+			if (arm == null) {
 				createArm();
+			}
 
 			if (findTarget(false)) {
 				isDigging = true;
-				if (box != null && (( headPosX < box.xMin || headPosX > box.xMax) || (headPosZ < box.zMin || headPosZ > box.zMax)))
-				{
+				if (box != null && ((headPosX < box.xMin || headPosX > box.xMax) || (headPosZ < box.zMin || headPosZ > box.zMax))) {
 					setHead(box.xMin + 1, yCoord + 2, box.zMin + 1);
 				}
 			}
@@ -119,33 +119,29 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 	private boolean movingVertically;
 	private double headTrajectory;
 	private Ticket chunkTicket;
-	public @TileNetworkData boolean isAlive;
+	public @TileNetworkData
+	boolean isAlive;
 	public EntityPlayer placedBy;
 
 	private void createArm() {
 
-		worldObj.spawnEntityInWorld(new EntityMechanicalArm(worldObj,
-				box.xMin + Utils.pipeMaxPos,
-				yCoord + bluePrintBuilder.bluePrint.sizeY - 1 + Utils.pipeMinPos, box.zMin + Utils.pipeMaxPos,
-				bluePrintBuilder.bluePrint.sizeX - 2 + Utils.pipeMinPos * 2,
-				bluePrintBuilder.bluePrint.sizeZ - 2 + Utils.pipeMinPos * 2, this));
+		worldObj.spawnEntityInWorld(new EntityMechanicalArm(worldObj, box.xMin + Utils.pipeMaxPos, yCoord + bluePrintBuilder.bluePrint.sizeY - 1
+				+ Utils.pipeMinPos, box.zMin + Utils.pipeMaxPos, bluePrintBuilder.bluePrint.sizeX - 2 + Utils.pipeMinPos * 2, bluePrintBuilder.bluePrint.sizeZ
+				- 2 + Utils.pipeMinPos * 2, this));
 	}
 
 	// Callback from the arm once it's created
-	public void setArm(EntityMechanicalArm arm)
-	{
+	public void setArm(EntityMechanicalArm arm) {
 		this.arm = arm;
 	}
 
 	@Override
 	public void updateEntity() {
-		if (!isAlive && CoreProxy.proxy.isSimulating(worldObj))
-		{
+		if (!isAlive && CoreProxy.proxy.isSimulating(worldObj)) {
 			super.updateEntity();
 			return;
 		}
-		if (!CoreProxy.proxy.isSimulating(worldObj) && isAlive)
-		{
+		if (!CoreProxy.proxy.isSimulating(worldObj) && isAlive) {
 			super.updateEntity();
 			return;
 		}
@@ -156,16 +152,15 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 			float energy = powerProvider.useEnergy(energyToUse, energyToUse, true);
 
 			if (energy > 0) {
-				moveHead(0.05 + energy / 200F);
+				moveHead(0.1 + energy / 200F);
 			}
 		}
 
 		if (CoreProxy.proxy.isSimulating(worldObj) && inProcess) {
 			sendNetworkUpdate();
 		}
-		if (inProcess || !isDigging) {
+		if (inProcess || !isDigging)
 			return;
-		}
 
 		createUtilsIfNeeded();
 
@@ -192,18 +187,17 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 			dig();
 		}
 
-
 	}
 
 	@Override
-	public void doWork() {}
+	public void doWork() {
+	}
 
 	protected void buildFrame() {
 
-		powerProvider.configure(20, 25, 25, 25, MAX_ENERGY);
-		if (powerProvider.useEnergy(25, 25, true) != 25) {
+		powerProvider.configure(20, 25, 100, 25, MAX_ENERGY);
+		if (powerProvider.useEnergy(25, 25, true) != 25)
 			return;
-		}
 
 		powerProvider.getTimeTracker().markTime(worldObj);
 
@@ -219,15 +213,15 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 
 	protected void dig() {
 		powerProvider.configure(20, 30, 500, 50, MAX_ENERGY);
-		if (powerProvider.useEnergy(60, 60, true) != 60) {
+		if (powerProvider.useEnergy(60, 60, true) != 60)
 			return;
-		}
 
 		if (!findTarget(true)) {
 
-			//I believe the issue is box going null becuase of bad chunkloader positioning
-			if (arm != null && box != null)
+			// I believe the issue is box going null becuase of bad chunkloader positioning
+			if (arm != null && box != null) {
 				setTarget(box.xMin + 1, yCoord + 2, box.zMin + 1);
+			}
 
 			isDigging = false;
 		}
@@ -237,23 +231,56 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 		movingVertically = true;
 		double[] head = getHead();
 		int[] target = getTarget();
-		headTrajectory = Math.atan2(target[2] -head[2], target[0] -head[0]);
+		headTrajectory = Math.atan2(target[2] - head[2], target[0] - head[0]);
 	}
 
+	private final LinkedList<int[]> visitList = Lists.newLinkedList();
 
 	public boolean findTarget(boolean doSet) {
-
 		if (worldObj.isRemote)
 			return false;
 
-		boolean[][] blockedColumns = new boolean[bluePrintBuilder.bluePrint.sizeX - 2][bluePrintBuilder.bluePrint.sizeZ - 2];
+		boolean columnVisitListIsUpdated = false;
 
-//		for (int searchX = 0; searchX < bluePrintBuilder.bluePrint.sizeX - 2; ++searchX) {
-//			for (int searchZ = 0; searchZ < bluePrintBuilder.bluePrint.sizeZ - 2; ++searchZ) {
-//				blockedColumns[searchX][searchZ] = false;
-//			}
-//		}
-//
+		if (visitList.isEmpty()) {
+			createColumnVisitList();
+			columnVisitListIsUpdated = true;
+		}
+
+		if (!doSet)
+			return !visitList.isEmpty();
+
+		if (visitList.isEmpty())
+			return false;
+
+		int[] nextTarget = visitList.removeFirst();
+
+		if (!columnVisitListIsUpdated) { // nextTarget may not be accurate, at least search the target column for changes
+			for (int y = nextTarget[1] + 1; y < yCoord + 3; y++) {
+				int blockID = worldObj.getBlockId(nextTarget[0], y, nextTarget[2]);
+
+				if (BlockUtil.canChangeBlock(blockID, worldObj, nextTarget[0], y, nextTarget[2]) && !BlockUtil.isSoftBlock(blockID, worldObj, nextTarget[0], y, nextTarget[2])) {
+					createColumnVisitList();
+					nextTarget = visitList.removeFirst();
+
+					break;
+				}
+			}
+		}
+
+		setTarget(nextTarget[0], nextTarget[1] + 1, nextTarget[2]);
+
+		return true;
+	}
+
+	/**
+	 * Make the column visit list: called once per layer
+	 */
+	private void createColumnVisitList() {
+		visitList.clear();
+
+		Integer[][] columnHeights = new Integer[bluePrintBuilder.bluePrint.sizeX - 2][bluePrintBuilder.bluePrint.sizeZ - 2];
+		boolean[][] blockedColumns = new boolean[bluePrintBuilder.bluePrint.sizeX - 2][bluePrintBuilder.bluePrint.sizeZ - 2];
 		for (int searchY = yCoord + 3; searchY >= 0; --searchY) {
 			int startX, endX, incX;
 
@@ -282,23 +309,29 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 
 				for (int searchZ = startZ; searchZ != endZ; searchZ += incZ) {
 					if (!blockedColumns[searchX][searchZ]) {
+						Integer height = columnHeights[searchX][searchZ];
 						int bx = box.xMin + searchX + 1, by = searchY, bz = box.zMin + searchZ + 1;
 
-						if (!BlockUtil.canChangeBlock(worldObj, bx, by, bz)) {
-							blockedColumns[searchX][searchZ] = true;
-						} else if (!BlockUtil.isSoftBlock(worldObj, bx, by, bz)) {
-							if (doSet) {
-								setTarget(bx, by + 1, bz);
-							}
+						if (height == null)
+							columnHeights[searchX][searchZ] = height = worldObj.getHeightValue(bx, bz);
 
-							return true;
+						if (height < by)
+							continue;
+
+						int blockID = worldObj.getBlockId(bx, by, bz);
+
+						if (!BlockUtil.canChangeBlock(blockID, worldObj, bx, by, bz)) {
+							blockedColumns[searchX][searchZ] = true;
+						} else if (!BlockUtil.isSoftBlock(blockID, worldObj, bx, by, bz)) {
+							visitList.add(new int[] { bx, by, bz });
 						}
+						// Stop at two planes - generally any obstructions will have been found and will force a recompute prior to this
+						if (visitList.size() > bluePrintBuilder.bluePrint.sizeZ * bluePrintBuilder.bluePrint.sizeX * 2)
+							return;
 					}
 				}
 			}
 		}
-
-		return false;
 	}
 
 	@Override
@@ -356,12 +389,12 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 		nbttagcompound.setTag("box", boxTag);
 	}
 
+	@SuppressWarnings("rawtypes")
 	public void positionReached() {
 		inProcess = false;
 
-		if (worldObj.isRemote) {
+		if (worldObj.isRemote)
 			return;
-		}
 
 		int i = targetX;
 		int j = targetY - 1;
@@ -374,7 +407,7 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 
 			// Share this with mining well!
 
-			ArrayList<ItemStack> stacks = BlockUtil.getItemStackFromBlock(worldObj, i, j, k);
+			List<ItemStack> stacks = BlockUtil.getItemStackFromBlock(worldObj, i, j, k);
 
 			if (stacks != null) {
 				for (ItemStack s : stacks) {
@@ -384,23 +417,27 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 				}
 			}
 
-            worldObj.playAuxSFXAtEntity(null, 2001, i, j, k, blockId + (worldObj.getBlockMetadata(i, j, k) << 12));
-			worldObj.setBlockWithNotify(i, j, k, 0);
+			worldObj.playAuxSFXAtEntity(null, 2001, i, j, k, blockId + (worldObj.getBlockMetadata(i, j, k) << 12));
+			worldObj.setBlock(i, j, k, 0);
 		}
 
 		// Collect any lost items laying around
 		double[] head = getHead();
-		AxisAlignedBB axis = AxisAlignedBB.getBoundingBox(head[0] - 1.5, head[1], head[2] - 1.5,	head[0] + 2.5, head[1] + 2.5, head[2] + 2.5);
+		AxisAlignedBB axis = AxisAlignedBB.getBoundingBox(head[0] - 2, head[1] - 2, head[2] - 2, head[0] + 3, head[1] + 3, head[2] + 3);
 		List result = worldObj.getEntitiesWithinAABB(EntityItem.class, axis);
 		for (int ii = 0; ii < result.size(); ii++) {
 			if (result.get(ii) instanceof EntityItem) {
 				EntityItem entity = (EntityItem) result.get(ii);
-				if (entity.isDead)
+				if (entity.isDead) {
 					continue;
-				if (entity.item.stackSize <= 0)
+				}
+
+				ItemStack mineable = entity.getEntityItem();
+				if (mineable.stackSize <= 0) {
 					continue;
+				}
 				CoreProxy.proxy.removeEntity(entity);
-				mineStack(entity.item);
+				mineStack(mineable);
 			}
 		}
 	}
@@ -411,8 +448,9 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 		stack.stackSize -= added.stackSize;
 
 		// Second, try to add to adjacent pipes
-		if (stack.stackSize > 0)
+		if (stack.stackSize > 0) {
 			Utils.addToRandomPipeEntry(this, ForgeDirection.UNKNOWN, stack);
+		}
 
 		// Lastly, throw the object away
 		if (stack.stackSize > 0) {
@@ -421,6 +459,9 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 			float f2 = worldObj.rand.nextFloat() * 0.8F + 0.1F;
 
 			EntityItem entityitem = new EntityItem(worldObj, xCoord + f, yCoord + f1 + 0.5F, zCoord + f2, stack);
+
+			entityitem.lifespan = BuildCraftCore.itemLifespan;
+			entityitem.delayBeforeCanPickup = 10;
 
 			float f3 = 0.05F;
 			entityitem.motionX = (float) worldObj.rand.nextGaussian() * f3;
@@ -431,7 +472,8 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 	}
 
 	private boolean isQuarriableBlock(int bx, int by, int bz) {
-		return BlockUtil.canChangeBlock(worldObj, bx, by, bz) && !BlockUtil.isSoftBlock(worldObj, bx, by, bz);
+		int blockID = worldObj.getBlockId(bx, by, bz);
+		return BlockUtil.canChangeBlock(blockID, worldObj, bx, by, bz) && !BlockUtil.isSoftBlock(blockID, worldObj, bx, by, bz);
 	}
 
 	@Override
@@ -454,7 +496,7 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 			arm.setDead();
 		}
 
-		if (builder != null){
+		if (builder != null) {
 			builder.setDead();
 		}
 
@@ -468,16 +510,15 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 	}
 
 	private void setBoundaries(boolean useDefault) {
-		if (chunkTicket == null)
-		{
+		if (chunkTicket == null) {
 			chunkTicket = ForgeChunkManager.requestTicket(BuildCraftFactory.instance, worldObj, Type.NORMAL);
 		}
-		if (chunkTicket == null)
-		{
+		if (chunkTicket == null) {
 			isAlive = false;
-			if (placedBy!=null && CoreProxy.proxy.isSimulating(worldObj))
-			{
-				PacketDispatcher.sendPacketToPlayer(new Packet3Chat(String.format("[BUILDCRAFT] The quarry at %d, %d, %d will not work because there are no more chunkloaders available", xCoord, yCoord, zCoord)), (Player) placedBy);
+			if (placedBy != null && CoreProxy.proxy.isSimulating(worldObj)) {
+				PacketDispatcher.sendPacketToPlayer(
+						new Packet3Chat(String.format("[BUILDCRAFT] The quarry at %d, %d, %d will not work because there are no more chunkloaders available",
+								xCoord, yCoord, zCoord)), (Player) placedBy);
 			}
 			sendNetworkUpdate();
 			return;
@@ -500,14 +541,13 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 		}
 
 		int xSize = a.xMax() - a.xMin() + 1;
-		int ySize = a.yMax() - a.yMin() + 1;
 		int zSize = a.zMax() - a.zMin() + 1;
 
-		if (xSize < 3 || zSize < 3 || ((xSize * zSize) >> 8) >= chunkTicket.getMaxChunkListDepth())
-		{
-			if (placedBy != null)
-			{
-				PacketDispatcher.sendPacketToPlayer(new Packet3Chat(String.format("Quarry size is outside of chunkloading bounds or too small %d %d (%d)", xSize, zSize, chunkTicket.getMaxChunkListDepth())),(Player) placedBy);
+		if (xSize < 3 || zSize < 3 || ((xSize * zSize) >> 8) >= chunkTicket.getMaxChunkListDepth()) {
+			if (placedBy != null) {
+				PacketDispatcher.sendPacketToPlayer(
+						new Packet3Chat(String.format("Quarry size is outside of chunkloading bounds or too small %d %d (%d)", xSize, zSize,
+								chunkTicket.getMaxChunkListDepth())), (Player) placedBy);
 			}
 			a = new DefaultAreaProvider(xCoord, yCoord, zCoord, xCoord + 10, yCoord + 4, zCoord + 10);
 
@@ -515,7 +555,7 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 		}
 
 		xSize = a.xMax() - a.xMin() + 1;
-		ySize = a.yMax() - a.yMin() + 1;
+		int ySize = a.yMax() - a.yMin() + 1;
 		zSize = a.zMax() - a.zMin() + 1;
 
 		box.initialize(a);
@@ -526,7 +566,7 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 		}
 
 		if (useDefault) {
-			int xMin = 0, zMin = 0;
+			int xMin, zMin;
 
 			ForgeDirection o = ForgeDirection.values()[worldObj.getBlockMetadata(xCoord, yCoord, zCoord)].getOpposite();
 
@@ -595,12 +635,9 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 	public void postPacketHandling(PacketUpdate packet) {
 		super.postPacketHandling(packet);
 
-		if (isAlive)
-		{
+		if (isAlive) {
 			createUtilsIfNeeded();
-		}
-		else
-		{
+		} else {
 			box.deleteLasers();
 			box.reset();
 			return;
@@ -615,8 +652,7 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 	public void initialize() {
 		super.initialize();
 
-		if (CoreProxy.proxy.isSimulating(this.worldObj) && !box.initialized)
-		{
+		if (CoreProxy.proxy.isSimulating(this.worldObj) && !box.initialized) {
 			setBoundaries(false);
 		}
 
@@ -633,7 +669,7 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 
 	@Override
 	public void setPowerProvider(IPowerProvider provider) {
-		provider = powerProvider;
+		powerProvider = provider;
 
 	}
 
@@ -698,10 +734,12 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 	}
 
 	@Override
-	public void openChest() {}
+	public void openChest() {
+	}
 
 	@Override
-	public void closeChest() {}
+	public void closeChest() {
+	}
 
 	@Override
 	public boolean isBuildingMaterial(int i) {
@@ -752,15 +790,14 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 					head[1] -= instantSpeed;
 				}
 			}
-			setHead(head[0],head[1],head[2]);
+			setHead(head[0], head[1], head[2]);
 		}
 
 		updatePosition();
 	}
 
 	private void updatePosition() {
-		if (arm!=null && worldObj.isRemote)
-		{
+		if (arm != null && worldObj.isRemote) {
 			arm.setHead(headPosX, headPosY, headPosZ);
 			arm.updatePosition();
 		}
@@ -779,6 +816,7 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 	private int[] getTarget() {
 		return new int[] { targetX, targetY, targetZ };
 	}
+
 	private void setTarget(int x, int y, int z) {
 		this.targetX = x;
 		this.targetY = y;
@@ -786,8 +824,7 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 	}
 
 	public void forceChunkLoading(Ticket ticket) {
-		if (chunkTicket == null)
-		{
+		if (chunkTicket == null) {
 			chunkTicket = ticket;
 		}
 
@@ -797,18 +834,17 @@ public class TileQuarry extends TileMachine implements IMachine, IPowerReceptor,
 		chunks.add(quarryChunk);
 		ForgeChunkManager.forceChunk(ticket, quarryChunk);
 
-		for (int chunkX = box.xMin >> 4; chunkX <= box.xMax >> 4; chunkX ++)
-		{
-			for (int chunkZ = box.zMin >> 4; chunkZ <= box.zMax >> 4; chunkZ ++)
-			{
+		for (int chunkX = box.xMin >> 4; chunkX <= box.xMax >> 4; chunkX++) {
+			for (int chunkZ = box.zMin >> 4; chunkZ <= box.zMax >> 4; chunkZ++) {
 				ChunkCoordIntPair chunk = new ChunkCoordIntPair(chunkX, chunkZ);
 				ForgeChunkManager.forceChunk(ticket, chunk);
 				chunks.add(chunk);
 			}
 		}
-		if (placedBy != null)
-		{
-			PacketDispatcher.sendPacketToPlayer(new Packet3Chat(String.format("[BUILDCRAFT] The quarry at %d %d %d will keep %d chunks loaded",xCoord, yCoord, zCoord, chunks.size())),(Player) placedBy);
+		if (placedBy != null) {
+			PacketDispatcher.sendPacketToPlayer(
+					new Packet3Chat(String.format("[BUILDCRAFT] The quarry at %d %d %d will keep %d chunks loaded", xCoord, yCoord, zCoord, chunks.size())),
+					(Player) placedBy);
 		}
 		sendNetworkUpdate();
 	}

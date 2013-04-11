@@ -11,38 +11,36 @@ package buildcraft.builders;
 
 import java.util.ArrayList;
 
-import net.minecraft.src.BlockContainer;
-import net.minecraft.src.CreativeTabs;
-import net.minecraft.src.EntityPlayer;
-import net.minecraft.src.IBlockAccess;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.Material;
-import net.minecraft.src.TileEntity;
-import net.minecraft.src.World;
+import net.minecraft.block.BlockContainer;
+import net.minecraft.block.material.Material;
+import net.minecraft.client.renderer.texture.IconRegister;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Icon;
+import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.World;
 import buildcraft.BuildCraftBuilders;
 import buildcraft.api.filler.IFillerPattern;
-import buildcraft.core.DefaultProps;
+import buildcraft.core.CreativeTabBuildCraft;
 import buildcraft.core.GuiIds;
 import buildcraft.core.proxy.CoreProxy;
 import buildcraft.core.utils.Utils;
-
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class BlockFiller extends BlockContainer {
 
-	int textureSides;
-	int textureTopOn;
-	int textureTopOff;
+	Icon textureSides;
+	Icon textureTopOn;
+	Icon textureTopOff;
 	public IFillerPattern currentPattern;
 
 	public BlockFiller(int i) {
 		super(i, Material.iron);
 
 		setHardness(0.5F);
-		setCreativeTab(CreativeTabs.tabRedstone);
-
-		textureSides = 4 * 16 + 2;
-		textureTopOn = 4 * 16 + 0;
-		textureTopOff = 4 * 16 + 1;
+		setCreativeTab(CreativeTabBuildCraft.tabBuildCraft);
 	}
 
 	@Override
@@ -52,47 +50,44 @@ public class BlockFiller extends BlockContainer {
 		if (entityplayer.isSneaking())
 			return false;
 
-		if (!CoreProxy.proxy.isRenderWorld(world))
+		if (!CoreProxy.proxy.isRenderWorld(world)) {
 			entityplayer.openGui(BuildCraftBuilders.instance, GuiIds.FILLER, world, i, j, k);
+		}
 		return true;
 
 	}
 
 	@SuppressWarnings({ "all" })
-	public int getBlockTexture(IBlockAccess iblockaccess, int i, int j, int k, int l) {
+	public Icon getBlockTexture(IBlockAccess iblockaccess, int i, int j, int k, int l) {
 		int m = iblockaccess.getBlockMetadata(i, j, k);
 
-		if (iblockaccess == null) {
-			return getBlockTextureFromSideAndMetadata(i, m);
-		}
+		if (iblockaccess == null)
+			return getIcon(i, m);
 
 		TileEntity tile = iblockaccess.getBlockTileEntity(i, j, k);
 
 		if (tile != null && tile instanceof TileFiller) {
 			TileFiller filler = (TileFiller) tile;
 			if (l == 1 || l == 0) {
-				if (!filler.isActive()) {
+				if (!filler.isActive())
 					return textureTopOff;
-				} else {
+				else
 					return textureTopOn;
-				}
-			} else if (filler.currentPattern != null) {
-				return filler.currentPattern.getTextureIndex();
-			} else {
+			} else if (filler.currentPattern != null)
+				return filler.currentPattern.getTexture();
+			else
 				return textureSides;
-			}
 		}
 
-		return getBlockTextureFromSideAndMetadata(l, m);
+		return getIcon(l, m);
 	}
 
 	@Override
-	public int getBlockTextureFromSide(int i) {
-		if (i == 0 || i == 1) {
+	public Icon getIcon(int i, int j) {
+		if (i == 0 || i == 1)
 			return textureTopOn;
-		} else {
+		else
 			return textureSides;
-		}
 	}
 
 	@Override
@@ -106,14 +101,17 @@ public class BlockFiller extends BlockContainer {
 		super.breakBlock(world, x, y, z, par5, par6);
 	}
 
-	@Override
-	public String getTextureFile() {
-		return DefaultProps.TEXTURE_BLOCKS;
-	}
-
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public void addCreativeItems(ArrayList itemList) {
 		itemList.add(new ItemStack(this));
+	}
+
+	@Override
+	@SideOnly(Side.CLIENT)
+	public void registerIcons(IconRegister par1IconRegister) {
+	    textureTopOn = par1IconRegister.registerIcon("buildcraft:blockFillerTopOn");
+        textureTopOff = par1IconRegister.registerIcon("buildcraft:blockFillerTopOff");
+        textureSides = par1IconRegister.registerIcon("buildcraft:blockFillerSides");
 	}
 }

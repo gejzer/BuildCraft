@@ -9,30 +9,32 @@
 
 package buildcraft.factory;
 
+import net.minecraft.block.BlockContainer;
+import net.minecraft.block.material.Material;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.world.IBlockAccess;
+import buildcraft.core.CreativeTabBuildCraft;
 import buildcraft.core.IMachine;
-import net.minecraft.src.BlockContainer;
-import net.minecraft.src.CreativeTabs;
-import net.minecraft.src.IBlockAccess;
-import net.minecraft.src.Material;
-import net.minecraft.src.TileEntity;
 
 public abstract class BlockMachineRoot extends BlockContainer {
 
 	protected BlockMachineRoot(int i, Material material) {
 		super(i, material);
-		setCreativeTab(CreativeTabs.tabRedstone);
+		setCreativeTab(CreativeTabBuildCraft.tabBuildCraft);
 	}
 
 	@Override
 	public float getBlockBrightness(IBlockAccess iblockaccess, int i, int j, int k) {
-		for (int x = i - 1; x <= i + 1; ++x)
-			for (int y = j - 1; y <= j + 1; ++y)
+		for (int x = i - 1; x <= i + 1; ++x) {
+			for (int y = j - 1; y <= j + 1; ++y) {
 				for (int z = k - 1; z <= k + 1; ++z) {
 					TileEntity tile = iblockaccess.getBlockTileEntity(x, y, z);
 
 					if (tile instanceof IMachine && ((IMachine) tile).isActive())
 						return super.getBlockBrightness(iblockaccess, i, j, k) + 0.5F;
 				}
+			}
+		}
 
 		return super.getBlockBrightness(iblockaccess, i, j, k);
 	}

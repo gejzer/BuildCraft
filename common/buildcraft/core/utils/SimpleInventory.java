@@ -1,18 +1,18 @@
-/** 
+/**
  * Copyright (c) Krapht, 2011
- * 
- * "LogisticsPipes" is distributed under the terms of the Minecraft Mod Public 
+ *
+ * "LogisticsPipes" is distributed under the terms of the Minecraft Mod Public
  * License 1.0, or MMPL. Please check the contents of the license located in
  * http://www.mod-buildcraft.com/MMPL-1.0.txt
  */
 
 package buildcraft.core.utils;
 
-import net.minecraft.src.EntityPlayer;
-import net.minecraft.src.IInventory;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.NBTTagCompound;
-import net.minecraft.src.NBTTagList;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 
 public class SimpleInventory implements IInventory, INBTTagable {
 
@@ -79,10 +79,12 @@ public class SimpleInventory implements IInventory, INBTTagable {
 	}
 
 	@Override
-	public void openChest() {}
+	public void openChest() {
+	}
 
 	@Override
-	public void closeChest() {}
+	public void closeChest() {
+	}
 
 	@Override
 	public void readFromNBT(NBTTagCompound nbttagcompound) {
@@ -129,5 +131,22 @@ public class SimpleInventory implements IInventory, INBTTagable {
 		ItemStack stackToTake = this._contents[i];
 		this._contents[i] = null;
 		return stackToTake;
+	}
+
+	public ItemStack[] getItemStacks()
+	{
+	    return _contents;
+	}
+
+	@Override
+	public boolean isInvNameLocalized() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isStackValidForSlot(int i, ItemStack itemstack) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

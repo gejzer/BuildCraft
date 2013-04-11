@@ -11,8 +11,8 @@ package buildcraft.builders.gui;
 
 import java.util.Collection;
 
-import net.minecraft.src.IInventory;
-import net.minecraft.src.ItemStack;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
 
 import org.lwjgl.opengl.GL11;
 
@@ -35,9 +35,11 @@ public class GuiBuilder extends GuiAdvancedInterface {
 
 		slots = new AdvancedSlot[7 * 4];
 
-		for (int i = 0; i < 7; ++i)
-			for (int j = 0; j < 4; ++j)
+		for (int i = 0; i < 7; ++i) {
+			for (int j = 0; j < 4; ++j) {
 				slots[i * 4 + j] = new ItemSlot(179 + j * 18, 18 + i * 18);
+			}
+		}
 	}
 
 	@Override
@@ -49,34 +51,33 @@ public class GuiBuilder extends GuiAdvancedInterface {
 		fontRenderer.drawString(StringUtil.localize("gui.building.resources"), 8, 60, 0x404040);
 		fontRenderer.drawString(StringUtil.localize("gui.inventory"), 8, ySize - 97, 0x404040);
 
-		if (builder.isBuildingBlueprint())
+		if (builder.isBuildingBlueprint()) {
 			fontRenderer.drawString(StringUtil.localize("gui.needed"), 185, 7, 0x404040);
+		}
 
-		drawForegroundSelection();
+		drawForegroundSelection(par1, par2);
 	}
 
 	@Override
 	protected void drawGuiContainerBackgroundLayer(float f, int x, int y) {
-		int i = 0;
+        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
 		int j = (width - xSize) / 2;
 		int k = (height - ySize) / 2;
 		int realXSize = 0;
 
 		if (builder.isBuildingBlueprint()) {
-			i = mc.renderEngine.getTexture(DefaultProps.TEXTURE_PATH_GUI + "/builder_blueprint.png");
+			mc.renderEngine.bindTexture(DefaultProps.TEXTURE_PATH_GUI + "/builder_blueprint.png");
 			realXSize = 256;
 		} else {
-			i = mc.renderEngine.getTexture(DefaultProps.TEXTURE_PATH_GUI + "/builder.png");
+			mc.renderEngine.bindTexture(DefaultProps.TEXTURE_PATH_GUI + "/builder.png");
 			realXSize = 176;
 		}
 
-		GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-		mc.renderEngine.bindTexture(i);
-
 		drawTexturedModalRect(j, k, 0, 0, realXSize, ySize);
 
-		for (int s = 0; s < slots.length; ++s)
+		for (int s = 0; s < slots.length; ++s) {
 			((ItemSlot) slots[s]).stack = null;
+		}
 
 		Collection<ItemStack> needs = builder.getNeededItems();
 
@@ -84,8 +85,9 @@ public class GuiBuilder extends GuiAdvancedInterface {
 			int s = 0;
 
 			for (ItemStack stack : needs) {
-				if (s >= slots.length)
+				if (s >= slots.length) {
 					break;
+				}
 
 				((ItemSlot) slots[s]).stack = stack.copy();
 				s++;

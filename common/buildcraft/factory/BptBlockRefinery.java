@@ -8,11 +8,12 @@
 
 package buildcraft.factory;
 
+import net.minecraftforge.common.ForgeDirection;
 import buildcraft.api.blueprints.BptBlock;
 import buildcraft.api.blueprints.BptSlotInfo;
 import buildcraft.api.blueprints.IBptContext;
-import net.minecraftforge.common.ForgeDirection;
 
+@Deprecated
 public class BptBlockRefinery extends BptBlock {
 
 	public BptBlockRefinery(int blockId) {
@@ -38,8 +39,20 @@ public class BptBlockRefinery extends BptBlock {
 
 		TileRefinery refinery = (TileRefinery) context.world().getBlockTileEntity(slot.x, slot.y, slot.z);
 
-		refinery.setFilter(0, slot.cpt.getInteger("filter0"));
-		refinery.setFilter(1, slot.cpt.getInteger("filter1"));
+		int filter0 = slot.cpt.getInteger("filter0");
+		int filter1 = slot.cpt.getInteger("filter1");
+		int filterMeta0 = 0;
+		int filterMeta1 = 0;
+
+		if (slot.cpt.hasKey("filterMeta0")) {
+			filterMeta0 = slot.cpt.getInteger("filterMeta0");
+		}
+		if (slot.cpt.hasKey("filterMeta1")) {
+			filterMeta1 = slot.cpt.getInteger("filterMeta1");
+		}
+
+		refinery.setFilter(0, filter0, filterMeta0);
+		refinery.setFilter(1, filter1, filterMeta1);
 	}
 
 }
