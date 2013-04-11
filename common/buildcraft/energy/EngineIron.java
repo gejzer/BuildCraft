@@ -9,7 +9,13 @@
 
 package buildcraft.energy;
 
+import net.minecraft.block.Block;
+import net.minecraft.inventory.ICrafting;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.ForgeDirection;
+import net.minecraftforge.liquids.ILiquidTank;
 import net.minecraftforge.liquids.LiquidContainerRegistry;
 import net.minecraftforge.liquids.LiquidStack;
 import net.minecraftforge.liquids.LiquidTank;
@@ -18,11 +24,6 @@ import buildcraft.api.fuels.IronEngineFuel;
 import buildcraft.core.DefaultProps;
 import buildcraft.core.utils.Utils;
 import buildcraft.energy.gui.ContainerEngine;
-import net.minecraft.src.Block;
-import net.minecraft.src.ICrafting;
-import net.minecraft.src.Item;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.NBTTagCompound;
 
 public class EngineIron extends Engine {
 
@@ -33,13 +34,10 @@ public class EngineIron extends Engine {
 	private ItemStack itemInInventory;
 
 	int burnTime = 0;
-	int liquidQty = 0;
-	public int liquidId = 0;
-
-	int coolantQty = 0;
-	public int coolantId = 0;
-
 	int heat = 0;
+	private LiquidTank fuelTank;
+	private LiquidTank coolantTank;
+	private IronEngineFuel currentFuel = null;
 
 	public int penaltyCooling = 0;
 
@@ -50,6 +48,8 @@ public class EngineIron extends Engine {
 
 		maxEnergy = 100000;
 		maxEnergyExtracted = 500;
+		fuelTank = new LiquidTank(MAX_LIQUID);
+		coolantTank = new LiquidTank(MAX_LIQUID);
 	}
 
 	@Override
@@ -85,30 +85,40 @@ public class EngineIron extends Engine {
 
 	@Override
 	public boolean isBurning() {
-		return liquidQty > 0 && penaltyCooling == 0 && tile.isRedstonePowered;
+		LiquidStack fuel = fuelTank.getLiquid();
+		return fuel != null && fuel.amount > 0 && penaltyCooling == 0 && tile.isRedstonePowered;
 	}
 
 	@Override
 	public void burn() {
 		currentOutput = 0;
-		IronEngineFuel currentFuel = IronEngineFuel.getFuelForLiquid(new LiquidStack(liquidId, liquidQty, 0));
-
-		if (currentFuel == null) {
-			return;
+		LiquidStack fuel = this.fuelTank.getLiquid();
+		if(currentFuel == null) {
+			currentFuel = IronEngineFuel.getFuelForLiquid(fuel);
 		}
+
+		if (currentFuel == null)
+			return;
 
 		if (penaltyCooling <= 0 && tile.isRedstonePowered) {
 
 			lastPowered = true;
 
-			if (burnTime > 0 || liquidQty > 0) {
+			if (burnTime > 0 || fuel.amount > 0) {
 				if (burnTime > 0) {
 					burnTime--;
-				} else {
-					liquidQty--;
-					burnTime = currentFuel.totalBurningTime / LiquidContainerRegistry.BUCKET_VOLUME;
 				}
-
+				if (burnTime <= 0) {
+					if(fuel != null) {
+						if (--fuel.amount <= 0) {
+							fuelTank.setLiquid(null);
+						}
+						burnTime = currentFuel.totalBurningTime / LiquidContainerRegistry.BUCKET_VOLUME;
+					} else {
+						currentFuel = null;
+						return;
+					}
+				}
 				currentOutput = currentFuel.powerPerCycle;
 				addEnergy(currentFuel.powerPerCycle);
 				heat += currentFuel.powerPerCycle;
@@ -127,13 +137,10 @@ public class EngineIron extends Engine {
 		super.update();
 
 		if (itemInInventory != null) {
-			LiquidStack liquid = null;
-			if (Block.ice.blockID == itemInInventory.itemID && heat > COOLANT_THRESHOLD)
-			{
+			LiquidStack liquid;
+			if (Block.ice.blockID == itemInInventory.itemID && heat > COOLANT_THRESHOLD) {
 				liquid = LiquidContainerRegistry.getLiquidForFilledItem(new ItemStack(Item.bucketWater));
-			}
-			else
-			{
+			} else {
 				liquid = LiquidContainerRegistry.getLiquidForFilledItem(itemInInventory);
 			}
 
@@ -148,15 +155,15 @@ public class EngineIron extends Engine {
 		if (heat > COOLANT_THRESHOLD) {
 			int extraHeat = heat - COOLANT_THRESHOLD;
 
-			IronEngineCoolant currentCoolant = IronEngineCoolant.getCoolantForLiquid(new LiquidStack(coolantId, coolantQty, 0));
-			if (currentCoolant != null)
-			{
-				if(coolantQty * currentCoolant.coolingPerUnit > extraHeat) {
-					coolantQty -= Math.round(extraHeat / currentCoolant.coolingPerUnit);
+			LiquidStack coolant = this.coolantTank.getLiquid();
+			IronEngineCoolant currentCoolant = IronEngineCoolant.getCoolantForLiquid(coolant);
+			if (currentCoolant != null) {
+				if (coolant.amount * currentCoolant.coolingPerUnit > extraHeat) {
+					coolant.amount -= Math.round(extraHeat / currentCoolant.coolingPerUnit);
 					heat = COOLANT_THRESHOLD;
 				} else {
-					heat -= coolantQty * currentCoolant.coolingPerUnit;
-					coolantQty = 0;
+					heat -= coolant.amount * currentCoolant.coolingPerUnit;
+					coolantTank.setLiquid(null);
 				}
 			}
 		}
@@ -166,7 +173,9 @@ public class EngineIron extends Engine {
 
 		}
 
-		if (heat <= 0) heat = 0;
+		if (heat <= 0) {
+			heat = 0;
+		}
 
 		if (heat == 0 && penaltyCooling > 0) {
 			penaltyCooling--;
@@ -190,16 +199,27 @@ public class EngineIron extends Engine {
 
 	@Override
 	public int getScaledBurnTime(int i) {
-		return (int) (((float) liquidQty / (float) (MAX_LIQUID)) * i);
+		return this.fuelTank.getLiquid() != null ? (int) (((float) this.fuelTank.getLiquid().amount / (float) (MAX_LIQUID)) * i) : 0;
 	}
 
 	@Override
 	public void readFromNBT(NBTTagCompound nbttagcompound) {
-		liquidId = nbttagcompound.getInteger("liquidId");
-		liquidQty = nbttagcompound.getInteger("liquidQty");
+		if (nbttagcompound.hasKey("liquidId")) {
+			fuelTank.setLiquid(new LiquidStack(nbttagcompound.getInteger("liquidId"), nbttagcompound.getInteger("liquidQty"), nbttagcompound
+					.getInteger("liquidMeta")));
+		} else {
+			fuelTank.readFromNBT(nbttagcompound.getCompoundTag("fuelTank"));
+		}
+
 		burnTime = nbttagcompound.getInteger("burnTime");
-		coolantId = nbttagcompound.getInteger("coolantId");
-		coolantQty = nbttagcompound.getInteger("coolantQty");
+
+		if (nbttagcompound.hasKey("coolantId")) {
+			coolantTank.setLiquid(new LiquidStack(nbttagcompound.getInteger("coolantId"), nbttagcompound.getInteger("coolantQty"), nbttagcompound
+					.getInteger("coolantMeta")));
+		} else {
+			coolantTank.readFromNBT(nbttagcompound.getCompoundTag("coolantTank"));
+		}
+
 		heat = nbttagcompound.getInteger("heat");
 		penaltyCooling = nbttagcompound.getInteger("penaltyCooling");
 
@@ -212,11 +232,10 @@ public class EngineIron extends Engine {
 
 	@Override
 	public void writeToNBT(NBTTagCompound nbttagcompound) {
-		nbttagcompound.setInteger("liquidId", liquidId);
-		nbttagcompound.setInteger("liquidQty", liquidQty);
+		nbttagcompound.setTag("fuelTank", fuelTank.writeToNBT(new NBTTagCompound()));
+		nbttagcompound.setTag("coolantTank", coolantTank.writeToNBT(new NBTTagCompound()));
+
 		nbttagcompound.setInteger("burnTime", burnTime);
-		nbttagcompound.setInteger("coolantId", coolantId);
-		nbttagcompound.setInteger("coolantQty", coolantQty);
 		nbttagcompound.setInteger("heat", heat);
 		nbttagcompound.setInteger("penaltyCooling", penaltyCooling);
 
@@ -229,7 +248,7 @@ public class EngineIron extends Engine {
 	}
 
 	public int getScaledCoolant(int i) {
-		return (int) (((float) coolantQty / (float) (MAX_LIQUID)) * i);
+		return coolantTank.getLiquid() != null ? (int) (((float) coolantTank.getLiquid().amount / (float) (MAX_LIQUID)) * i) : 0;
 	}
 
 	@Override
@@ -242,49 +261,80 @@ public class EngineIron extends Engine {
 		switch (i) {
 		case 0:
 			int iEnergy = Math.round(energy * 10);
-			iEnergy = (iEnergy & 0xff00) | (j & 0xff);
+			iEnergy = (iEnergy & 0xffff0000) | (j & 0xffff);
 			energy = iEnergy / 10;
 			break;
 		case 1:
 			iEnergy = Math.round(energy * 10);
-			iEnergy = (iEnergy & 0xff) | ((j & 0xff) << 8);
+			iEnergy = (iEnergy & 0xffff) | ((j & 0xffff) << 16);
 			energy = iEnergy / 10;
 			break;
 		case 2:
 			currentOutput = j / 10;
 			break;
 		case 3:
-			heat = (heat & 0xff00) | (j & 0xff);
+			heat = (heat & 0xffff0000) | (j & 0xffff);
 			break;
 		case 4:
-			heat = (heat & 0xff) | ((j & 0xff) << 8 );
+			heat = (heat & 0xffff) | ((j & 0xffff) << 16);
 			break;
 		case 5:
-			liquidQty = j;
+			if (fuelTank.getLiquid() == null) {
+				fuelTank.setLiquid(new LiquidStack(0, j));
+			} else {
+				fuelTank.getLiquid().amount = j;
+			}
 			break;
 		case 6:
-			liquidId = j;
+			if (fuelTank.getLiquid() == null) {
+				fuelTank.setLiquid(new LiquidStack(j, 0));
+			} else {
+				fuelTank.setLiquid(new LiquidStack(j,fuelTank.getLiquid().amount,fuelTank.getLiquid().itemMeta));
+			}
 			break;
 		case 7:
-			coolantQty = j;
+			if (coolantTank.getLiquid() == null) {
+				coolantTank.setLiquid(new LiquidStack(0, j));
+			} else {
+				coolantTank.getLiquid().amount = j;
+			}
 			break;
 		case 8:
-			coolantId = j;
+			if (coolantTank.getLiquid() == null) {
+				coolantTank.setLiquid(new LiquidStack(j, 0));
+			} else {
+                coolantTank.setLiquid(new LiquidStack(j,coolantTank.getLiquid().amount,coolantTank.getLiquid().itemMeta));
+			}
 			break;
+		case 9:
+			if (fuelTank.getLiquid() == null) {
+				fuelTank.setLiquid(new LiquidStack(0, 0, j));
+			} else {
+                fuelTank.setLiquid(new LiquidStack(fuelTank.getLiquid().itemID,fuelTank.getLiquid().amount,j));
+			}
+			break;
+		case 10:
+			if (coolantTank.getLiquid() == null) {
+				coolantTank.setLiquid(new LiquidStack(0, 0, j));
+			} else {
+                coolantTank.setLiquid(new LiquidStack(coolantTank.getLiquid().itemID,coolantTank.getLiquid().amount,j));
+			}
 		}
 	}
 
 	@Override
 	public void sendGUINetworkData(ContainerEngine containerEngine, ICrafting iCrafting) {
-		iCrafting.updateCraftingInventoryInfo(containerEngine, 0, Math.round(energy * 10) & 0xff);
-		iCrafting.updateCraftingInventoryInfo(containerEngine, 1, (Math.round(energy * 10) & 0xff00) >> 8 );
-		iCrafting.updateCraftingInventoryInfo(containerEngine, 2, Math.round(currentOutput * 10));
-		iCrafting.updateCraftingInventoryInfo(containerEngine, 3, heat & 0xff);
-		iCrafting.updateCraftingInventoryInfo(containerEngine, 4, (heat & 0xff00) >> 8);
-		iCrafting.updateCraftingInventoryInfo(containerEngine, 5, liquidQty);
-		iCrafting.updateCraftingInventoryInfo(containerEngine, 6, liquidId);
-		iCrafting.updateCraftingInventoryInfo(containerEngine, 7, coolantQty);
-		iCrafting.updateCraftingInventoryInfo(containerEngine, 8, coolantId);
+		iCrafting.sendProgressBarUpdate(containerEngine, 0, Math.round(energy * 10) & 0xffff);
+		iCrafting.sendProgressBarUpdate(containerEngine, 1, (Math.round(energy * 10) & 0xffff0000) >> 16);
+		iCrafting.sendProgressBarUpdate(containerEngine, 2, Math.round(currentOutput * 10));
+		iCrafting.sendProgressBarUpdate(containerEngine, 3, heat & 0xffff);
+		iCrafting.sendProgressBarUpdate(containerEngine, 4, (heat & 0xffff0000) >> 16);
+		iCrafting.sendProgressBarUpdate(containerEngine, 5, fuelTank.getLiquid() != null ? fuelTank.getLiquid().amount : 0);
+		iCrafting.sendProgressBarUpdate(containerEngine, 6, fuelTank.getLiquid() != null ? fuelTank.getLiquid().itemID : 0);
+		iCrafting.sendProgressBarUpdate(containerEngine, 7, coolantTank.getLiquid() != null ? coolantTank.getLiquid().amount : 0);
+		iCrafting.sendProgressBarUpdate(containerEngine, 8, coolantTank.getLiquid() != null ? coolantTank.getLiquid().itemID : 0);
+		iCrafting.sendProgressBarUpdate(containerEngine, 9, fuelTank.getLiquid() != null ? fuelTank.getLiquid().itemMeta : 0);
+		iCrafting.sendProgressBarUpdate(containerEngine, 10, coolantTank.getLiquid() != null ? coolantTank.getLiquid().itemMeta : 0);
 	}
 
 	@Override
@@ -298,88 +348,61 @@ public class EngineIron extends Engine {
 	}
 
 	/* ITANKCONTAINER */
+	@Override
 	public int fill(ForgeDirection from, LiquidStack resource, boolean doFill) {
 
 		// Handle coolant
 		if (IronEngineCoolant.getCoolantForLiquid(resource) != null)
 			return fillCoolant(from, resource, doFill);
 
-		int res = 0;
+		if (IronEngineFuel.getFuelForLiquid(resource) != null)
+			return fuelTank.fill(resource, doFill);
 
-		if (liquidQty > 0 && liquidId != resource.itemID) {
-			return 0;
-		}
-
-		if (IronEngineFuel.getFuelForLiquid(resource) == null)
-			return 0;
-
-		if (liquidQty + resource.amount <= MAX_LIQUID) {
-			if (doFill) {
-				liquidQty += resource.amount;
-			}
-
-			res = resource.amount;
-		} else {
-			res = MAX_LIQUID - liquidQty;
-
-			if (doFill) {
-				liquidQty = MAX_LIQUID;
-			}
-		}
-
-		liquidId = resource.itemID;
-
-		return res;
+		return 0;
 	}
 
 	private int fillCoolant(ForgeDirection from, LiquidStack resource, boolean doFill) {
-		int res = 0;
-
-		if (coolantQty > 0 && coolantId != resource.itemID)
-			return 0;
-
-		if (coolantQty + resource.amount <= MAX_LIQUID) {
-			if (doFill)
-				coolantQty += resource.amount;
-
-			res = resource.amount;
-		} else {
-			res = MAX_LIQUID - coolantQty;
-
-			if (doFill)
-				coolantQty = MAX_LIQUID;
-		}
-
-		coolantId = resource.itemID;
-
-		return res;
+		return coolantTank.fill(resource, doFill);
 	}
 
 	@Override
 	public LiquidTank[] getLiquidSlots() {
-		return new LiquidTank[] { new LiquidTank(liquidId, liquidQty, MAX_LIQUID),
-				new LiquidTank(coolantId, coolantQty, MAX_LIQUID) };
+		return new LiquidTank[] { fuelTank, coolantTank };
 	}
 
-
 	/* IINVENTORY */
-	@Override public int getSizeInventory() { return 1; }
-	@Override public ItemStack getStackInSlot(int i) { return itemInInventory; }
-	@Override public void setInventorySlotContents(int i, ItemStack itemstack) { itemInInventory = itemstack; }
+	@Override
+	public int getSizeInventory() {
+		return 1;
+	}
 
 	@Override
-	public ItemStack decrStackSize(int i, int j) {
-		if (itemInInventory != null) {
-			ItemStack newStack = itemInInventory.splitStack(j);
+	public ItemStack getStackInSlot(int i) {
+		return itemInInventory;
+	}
 
-			if (itemInInventory.stackSize == 0) {
+	@Override
+	public void setInventorySlotContents(int i, ItemStack itemstack) {
+		itemInInventory = itemstack;
+	}
+
+	@Override
+	public ItemStack decrStackSize(int slot, int amount) {
+		if (itemInInventory != null) {
+			if (itemInInventory.stackSize <= 0) {
 				itemInInventory = null;
+				return null;
+			}
+			ItemStack newStack = itemInInventory;
+			if (amount >= newStack.stackSize) {
+				itemInInventory = null;
+			} else {
+				newStack = itemInInventory.splitStack(amount);
 			}
 
 			return newStack;
-		} else {
-			return null;
 		}
+		return null;
 	}
 
 	@Override
@@ -391,4 +414,23 @@ public class EngineIron extends Engine {
 		return toReturn;
 	}
 
+	@Override
+	public ILiquidTank getTank(ForgeDirection direction, LiquidStack type) {
+		switch (direction) {
+		case UP:
+			return fuelTank;
+		case DOWN:
+			return coolantTank;
+		default:
+			return null;
+		}
+	}
+
+	public LiquidStack getFuel() {
+		return fuelTank.getLiquid();
+	}
+
+	public LiquidStack getCoolant() {
+		return coolantTank.getLiquid();
+	}
 }

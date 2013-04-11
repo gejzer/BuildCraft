@@ -12,12 +12,15 @@ package buildcraft.silicon.gui;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-import net.minecraft.src.IInventory;
-import net.minecraft.src.ItemStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
 
 import org.lwjgl.opengl.GL11;
 
+import buildcraft.BuildCraftCore;
 import buildcraft.api.recipes.AssemblyRecipe;
+import buildcraft.core.CoreIconProvider;
 import buildcraft.core.DefaultProps;
 import buildcraft.core.gui.GuiAdvancedInterface;
 import buildcraft.core.network.PacketCoordinates;
@@ -33,8 +36,7 @@ public class GuiAssemblyTable extends GuiAdvancedInterface {
 
 	TileAssemblyTable assemblyTable;
 
-	class AssemblyLedger extends Ledger
-	{
+	class AssemblyLedger extends Ledger {
 		int headerColour = 0xe1c92f;
 		int subheaderColour = 0xaaafb8;
 		int textColour = 0x000000;
@@ -43,6 +45,7 @@ public class GuiAssemblyTable extends GuiAdvancedInterface {
 			maxHeight = 94;
 			overlayColor = 0xd46c1f;
 		}
+
 		@Override
 		public void draw(int x, int y) {
 
@@ -50,7 +53,8 @@ public class GuiAssemblyTable extends GuiAdvancedInterface {
 			drawBackground(x, y);
 
 			// Draw icon
-			drawIcon(DefaultProps.TEXTURE_ICONS, 0, x + 3, y + 4);
+			Minecraft.getMinecraft().renderEngine.bindTexture("/gui/items.png");
+			drawIcon(BuildCraftCore.iconProvider.getIcon(CoreIconProvider.ENERGY), x + 3, y + 4);
 
 			if (!isFullyOpened())
 				return;
@@ -61,16 +65,17 @@ public class GuiAssemblyTable extends GuiAdvancedInterface {
 			fontRenderer.drawStringWithShadow(StringUtil.localize("gui.stored") + ":", x + 22, y + 44, subheaderColour);
 			fontRenderer.drawString(String.format("%2.1f MJ", assemblyTable.getStoredEnergy()), x + 22, y + 56, textColour);
 			fontRenderer.drawStringWithShadow(StringUtil.localize("gui.assemblyRate") + ":", x + 22, y + 68, subheaderColour);
-			fontRenderer.drawString(String.format("%3.2f MJ/t",assemblyTable.getRecentEnergyAverage() / 100.0f), x + 22, y + 80, textColour);
+			fontRenderer.drawString(String.format("%3.2f MJ/t", assemblyTable.getRecentEnergyAverage() / 100.0f), x + 22, y + 80, textColour);
 
 		}
 
 		@Override
 		public String getTooltip() {
-			return String.format("%3.2f MJ/t",assemblyTable.getRecentEnergyAverage() / 100.0f);
+			return String.format("%3.2f MJ/t", assemblyTable.getRecentEnergyAverage() / 100.0f);
 		}
 
 	}
+
 	class RecipeSlot extends AdvancedSlot {
 
 		public AssemblyRecipe recipe;
@@ -99,18 +104,20 @@ public class GuiAssemblyTable extends GuiAdvancedInterface {
 
 		int p = 0;
 
-		for (int j = 0; j < 2; ++j)
+		for (int j = 0; j < 2; ++j) {
 			for (int i = 0; i < 4; ++i) {
 				slots[p] = new RecipeSlot(134 + 18 * j, 36 + 18 * i);
 				p++;
 			}
+		}
 
 		updateRecipes();
 
 		// Request current selection from server
-		if(CoreProxy.proxy.isRenderWorld(assemblyTable.worldObj))
-			CoreProxy.proxy.sendToServer(new PacketCoordinates(PacketIds.SELECTION_ASSEMBLY_GET, assemblyTable.xCoord,
-				assemblyTable.yCoord, assemblyTable.zCoord).getPacket());
+		if (CoreProxy.proxy.isRenderWorld(assemblyTable.worldObj)) {
+			CoreProxy.proxy.sendToServer(new PacketCoordinates(PacketIds.SELECTION_ASSEMBLY_GET, assemblyTable.xCoord, assemblyTable.yCoord,
+					assemblyTable.zCoord).getPacket());
+		}
 	}
 
 	public void updateRecipes() {
@@ -118,10 +125,11 @@ public class GuiAssemblyTable extends GuiAdvancedInterface {
 		Iterator<AssemblyRecipe> cur = potentialRecipes.iterator();
 
 		for (int p = 0; p < 8; ++p)
-			if (cur.hasNext())
+			if (cur.hasNext()) {
 				((RecipeSlot) slots[p]).recipe = cur.next();
-			else
+			} else {
 				((RecipeSlot) slots[p]).recipe = null;
+			}
 	}
 
 	@Override
@@ -130,14 +138,13 @@ public class GuiAssemblyTable extends GuiAdvancedInterface {
 		String title = StringUtil.localize("tile.assemblyTableBlock");
 		fontRenderer.drawString(title, getCenteredOffset(title), 15, 0x404040);
 		fontRenderer.drawString(StringUtil.localize("gui.inventory"), 8, ySize - 97, 0x404040);
-		drawForegroundSelection();
+		drawForegroundSelection(par1, par2);
 	}
 
 	@Override
 	protected void drawGuiContainerBackgroundLayer(float f, int x, int y) {
-		int i = mc.renderEngine.getTexture(DefaultProps.TEXTURE_PATH_GUI + "/assembly_table.png");
-		GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-		mc.renderEngine.bindTexture(i);
+        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+		mc.renderEngine.bindTexture(DefaultProps.TEXTURE_PATH_GUI + "/assembly_table.png");
 		int cornerX = (width - xSize) / 2;
 		int cornerY = (height - ySize) / 2;
 		drawTexturedModalRect(cornerX, cornerY, 0, 0, xSize, ySize);
@@ -147,10 +154,11 @@ public class GuiAssemblyTable extends GuiAdvancedInterface {
 		for (int s = 0; s < slots.length; ++s) {
 			RecipeSlot slot = (RecipeSlot) slots[s];
 
-			if (assemblyTable.isAssembling(slot.recipe))
+			if (assemblyTable.isAssembling(slot.recipe)) {
 				drawTexturedModalRect(cornerX + slot.x, cornerY + slot.y, 196, 1, 16, 16);
-			else if (assemblyTable.isPlanned(slot.recipe))
+			} else if (assemblyTable.isPlanned(slot.recipe)) {
 				drawTexturedModalRect(cornerX + slot.x, cornerY + slot.y, 177, 1, 16, 16);
+			}
 		}
 
 		int height = (int) assemblyTable.getCompletionRatio(70);
@@ -189,8 +197,8 @@ public class GuiAssemblyTable extends GuiAdvancedInterface {
 			message.itemDmg = slot.recipe.output.getItemDamage();
 
 			if (CoreProxy.proxy.isRenderWorld(assemblyTable.worldObj)) {
-				PacketPayload payload = TileAssemblyTable.selectionMessageWrapper.toPayload(assemblyTable.xCoord, assemblyTable.yCoord,
-						assemblyTable.zCoord, message);
+				PacketPayload payload = TileAssemblyTable.selectionMessageWrapper.toPayload(assemblyTable.xCoord, assemblyTable.yCoord, assemblyTable.zCoord,
+						message);
 
 				PacketUpdate packet = new PacketUpdate(PacketIds.SELECTION_ASSEMBLY, payload);
 				packet.posX = assemblyTable.xCoord;

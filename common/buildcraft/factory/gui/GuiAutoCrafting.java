@@ -9,8 +9,8 @@
 
 package buildcraft.factory.gui;
 
-import net.minecraft.src.InventoryPlayer;
-import net.minecraft.src.World;
+import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.world.World;
 
 import org.lwjgl.opengl.GL11;
 
@@ -27,8 +27,9 @@ public class GuiAutoCrafting extends GuiBuildCraft {
 	@Override
 	public void onGuiClosed() {
 		super.onGuiClosed();
-		if (this.mc.thePlayer != null)
+		if (this.mc.thePlayer != null) {
 			inventorySlots.onCraftGuiClosed(mc.thePlayer);
+		}
 	}
 
 	@Override
@@ -40,9 +41,8 @@ public class GuiAutoCrafting extends GuiBuildCraft {
 
 	@Override
 	protected void drawGuiContainerBackgroundLayer(float f, int x, int y) {
-		int i = mc.renderEngine.getTexture("/gui/crafting.png");
-		GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-		mc.renderEngine.bindTexture(i);
+        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+		mc.renderEngine.bindTexture("/gui/crafting.png");
 		int j = (width - xSize) / 2;
 		int k = (height - ySize) / 2;
 		drawTexturedModalRect(j, k, 0, 0, xSize, ySize);

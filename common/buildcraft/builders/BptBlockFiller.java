@@ -11,6 +11,8 @@ package buildcraft.builders;
 
 import java.util.LinkedList;
 
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import buildcraft.BuildCraftBuilders;
 import buildcraft.api.blueprints.BptBlock;
 import buildcraft.api.blueprints.BptBlockUtils;
@@ -20,9 +22,7 @@ import buildcraft.api.core.LaserKind;
 import buildcraft.api.core.Position;
 import buildcraft.core.Box;
 
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.NBTTagCompound;
-
+@Deprecated
 public class BptBlockFiller extends BptBlock {
 
 	public BptBlockFiller(int blockId) {
@@ -70,7 +70,7 @@ public class BptBlockFiller extends BptBlock {
 
 	@Override
 	public void buildBlock(BptSlotInfo slot, IBptContext context) {
-		context.world().setBlockWithNotify(slot.x, slot.y, slot.z, slot.blockId);
+		context.world().setBlock(slot.x, slot.y, slot.z, slot.blockId);
 
 		TileFiller filler = (TileFiller) context.world().getBlockTileEntity(slot.x, slot.y, slot.z);
 

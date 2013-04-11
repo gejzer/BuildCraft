@@ -11,7 +11,7 @@ package buildcraft.builders.gui;
 
 import java.util.Date;
 
-import net.minecraft.src.IInventory;
+import net.minecraft.inventory.IInventory;
 
 import org.lwjgl.opengl.GL11;
 
@@ -45,17 +45,17 @@ public class GuiTemplate extends GuiBuildCraft {
 		fontRenderer.drawString(title, getCenteredOffset(title), 6, 0x404040);
 		fontRenderer.drawString(StringUtil.localize("gui.inventory"), 8, ySize - 152, 0x404040);
 
-		if (editMode && ((new Date()).getTime() / 100) % 8 >= 4)
+		if (editMode && ((new Date()).getTime() / 100) % 8 >= 4) {
 			fontRenderer.drawString(template.name + "|", 51, 62, 0x404040);
-		else
+		} else {
 			fontRenderer.drawString(template.name, 51, 62, 0x404040);
+		}
 	}
 
 	@Override
 	protected void drawGuiContainerBackgroundLayer(float f, int x, int y) {
-		int i = mc.renderEngine.getTexture(DefaultProps.TEXTURE_PATH_GUI + "/template_gui.png");
-		GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-		mc.renderEngine.bindTexture(i);
+        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+		mc.renderEngine.bindTexture(DefaultProps.TEXTURE_PATH_GUI + "/template_gui.png");
 		int j = (width - xSize) / 2;
 		int k = (height - ySize) / 2;
 		drawTexturedModalRect(j, k, 0, 0, xSize, ySize);
@@ -73,10 +73,11 @@ public class GuiTemplate extends GuiBuildCraft {
 		int x = i - xMin;
 		int y = j - yMin;
 
-		if (editMode)
+		if (editMode) {
 			editMode = false;
-		else if (x >= 50 && y >= 61 && x <= 137 && y <= 139)
+		} else if (x >= 50 && y >= 61 && x <= 137 && y <= 139) {
 			editMode = true;
+		}
 	}
 
 	@Override
@@ -87,9 +88,8 @@ public class GuiTemplate extends GuiBuildCraft {
 				return;
 			}
 			PacketPayload payload = new PacketPayload();
-			payload.intPayload = new int[]{c};
-			PacketUpdate packet = new PacketUpdate(PacketIds.ARCHITECT_NAME,
-					template.xCoord, template.yCoord, template.zCoord, payload);
+			payload.intPayload = new int[] { c };
+			PacketUpdate packet = new PacketUpdate(PacketIds.ARCHITECT_NAME, template.xCoord, template.yCoord, template.zCoord, payload);
 			CoreProxy.proxy.sendToServer(packet.getPacket());
 		} else {
 			super.keyTyped(c, i);

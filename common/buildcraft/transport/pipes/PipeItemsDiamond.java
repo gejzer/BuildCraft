@@ -13,21 +13,22 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.LinkedList;
 
-import cpw.mods.fml.common.FMLLog;
-
-import net.minecraft.src.Item;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.NBTBase;
-import net.minecraft.src.NBTTagCompound;
-import buildcraft.BuildCraftTransport;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTBase;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.ForgeDirection;
+import buildcraft.BuildCraftTransport;
+import buildcraft.api.core.IIconProvider;
 import buildcraft.api.core.Position;
 import buildcraft.api.transport.IPipedItem;
-import buildcraft.core.DefaultProps;
 import buildcraft.core.network.IClientState;
 import buildcraft.transport.IPipeTransportItemsHook;
 import buildcraft.transport.Pipe;
+import buildcraft.transport.PipeIconProvider;
 import buildcraft.transport.PipeTransportItems;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class PipeItemsDiamond extends Pipe implements IPipeTransportItemsHook, IClientState {
 
@@ -36,21 +37,27 @@ public class PipeItemsDiamond extends Pipe implements IPipeTransportItemsHook, I
 	}
 
 	@Override
-	public String getTextureFile() {
-		return DefaultProps.TEXTURE_BLOCKS;
+	@SideOnly(Side.CLIENT)
+	public IIconProvider getIconProvider() {
+		return BuildCraftTransport.instance.pipeIconProvider;
 	}
 
 	@Override
-	public int getTextureIndex(ForgeDirection direction) {
-		if (direction == ForgeDirection.UNKNOWN){
-			return 1 * 16 + 5;
+	public int getIconIndex(ForgeDirection direction) {
+		switch(direction){
+			case UNKNOWN: return PipeIconProvider.PipeItemsDiamond_Center;
+			case DOWN: return PipeIconProvider.PipeItemsDiamond_Down;
+			case UP: return PipeIconProvider.PipeItemsDiamond_Up;
+			case NORTH: return PipeIconProvider.PipeItemsDiamond_North;
+			case SOUTH: return PipeIconProvider.PipeItemsDiamond_South;
+			case WEST: return PipeIconProvider.PipeItemsDiamond_West;
+			case EAST: return PipeIconProvider.PipeItemsDiamond_East;
+			default: throw new IllegalArgumentException("direction out of bounds");
 		}
-		return BuildCraftTransport.diamondTextures[direction.ordinal()];
 	}
 
 	@Override
-	public LinkedList<ForgeDirection> filterPossibleMovements(LinkedList<ForgeDirection> possibleOrientations, Position pos,
-			IPipedItem item) {
+	public LinkedList<ForgeDirection> filterPossibleMovements(LinkedList<ForgeDirection> possibleOrientations, Position pos, IPipedItem item) {
 		LinkedList<ForgeDirection> filteredOrientations = new LinkedList<ForgeDirection>();
 		LinkedList<ForgeDirection> defaultOrientations = new LinkedList<ForgeDirection>();
 
@@ -61,21 +68,24 @@ public class PipeItemsDiamond extends Pipe implements IPipeTransportItemsHook, I
 			// NB: if there's several of the same match, the probability
 			// to use that filter is higher, this is why there are
 			// no breaks here.
-			PipeLogicDiamond diamondLogic = (PipeLogicDiamond)logic;
+			PipeLogicDiamond diamondLogic = (PipeLogicDiamond) logic;
 			for (int slot = 0; slot < 9; ++slot) {
 				ItemStack stack = diamondLogic.getStackInSlot(dir.ordinal() * 9 + slot);
 
-				if (stack != null)
+				if (stack != null) {
 					foundFilter = true;
+				}
 
 				if (stack != null && stack.itemID == item.getItemStack().itemID)
-					if ((Item.itemsList[item.getItemStack().itemID].isDamageable()))
+					if ((Item.itemsList[item.getItemStack().itemID].isDamageable())) {
 						filteredOrientations.add(dir);
-					else if (stack.getItemDamage() == item.getItemStack().getItemDamage())
+					} else if (stack.getItemDamage() == item.getItemStack().getItemDamage()) {
 						filteredOrientations.add(dir);
+					}
 			}
-			if (!foundFilter)
+			if (!foundFilter) {
 				defaultOrientations.add(dir);
+			}
 		}
 		if (filteredOrientations.size() != 0)
 			return filteredOrientations;

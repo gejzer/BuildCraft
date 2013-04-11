@@ -1,32 +1,26 @@
-/** 
+/**
  * Copyright (c) SpaceToad, 2011
  * http://www.mod-buildcraft.com
- * 
- * BuildCraft is distributed under the terms of the Minecraft Mod Public 
+ *
+ * BuildCraft is distributed under the terms of the Minecraft Mod Public
  * License 1.0, or MMPL. Please check the contents of the license located in
  * http://www.mod-buildcraft.com/MMPL-1.0.txt
  */
 
 package buildcraft.energy;
 
-import buildcraft.core.DefaultProps;
-import net.minecraft.src.BlockContainer;
-import net.minecraft.src.IBlockAccess;
-import net.minecraft.src.Material;
-import net.minecraft.src.TileEntity;
-import net.minecraft.src.World;
-
+import net.minecraft.block.BlockContainer;
+import net.minecraft.block.material.Material;
+import net.minecraft.client.renderer.texture.IconRegister;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.world.World;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class BlockPollution extends BlockContainer {
 
 	public BlockPollution(int i) {
 		super(i, Material.air);
-		blockIndexInTexture = 5 * 16 + 0;
-	}
-
-	@Override
-	public String getTextureFile() {
-		return DefaultProps.TEXTURE_BLOCKS;
 	}
 
 	@Override
@@ -43,9 +37,11 @@ public class BlockPollution extends BlockContainer {
 	public TileEntity createNewTileEntity(World var1) {
 		return new TilePollution();
 	}
-	
-	@SuppressWarnings({ "all" })
-	public int getBlockTexture(IBlockAccess iblockaccess, int i, int j, int k, int l) {
-		return 5 * 16 + iblockaccess.getBlockMetadata(i, j, k);
+
+	@Override
+	@SideOnly(Side.CLIENT)
+	public void registerIcons(IconRegister par1IconRegister)
+	{
+	    par1IconRegister.registerIcon("buildcraft:blockPollution");
 	}
 }

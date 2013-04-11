@@ -9,45 +9,50 @@
 
 package buildcraft.transport.pipes;
 
+import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.ForgeDirection;
-import buildcraft.core.DefaultProps;
+import buildcraft.BuildCraftTransport;
+import buildcraft.api.core.IIconProvider;
 import buildcraft.transport.EntityData;
 import buildcraft.transport.IItemTravelingHook;
 import buildcraft.transport.Pipe;
+import buildcraft.transport.PipeIconProvider;
 import buildcraft.transport.PipeTransportItems;
-import net.minecraft.src.TileEntity;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
-public class PipeItemsVoid extends Pipe implements IItemTravelingHook{
+public class PipeItemsVoid extends Pipe implements IItemTravelingHook {
 
 	public PipeItemsVoid(int itemID) {
 		super(new PipeTransportItems(), new PipeLogicVoid(), itemID);
 		((PipeTransportItems) transport).travelHook = this;
 	}
-	
+
 	@Override
-	public String getTextureFile() {
-		return DefaultProps.TEXTURE_BLOCKS;
-	}
-	
-	@Override
-	public int getTextureIndex(ForgeDirection direction) {
-		return 8 * 16 + 14;
+	@SideOnly(Side.CLIENT)
+	public IIconProvider getIconProvider() {
+		return BuildCraftTransport.instance.pipeIconProvider;
 	}
 
+	@Override
+	public int getIconIndex(ForgeDirection direction) {
+		return PipeIconProvider.PipeItemsVoid;
+	}
 
-	//This is called if the void pipe is only connected to one pipe
+	// This is called if the void pipe is only connected to one pipe
 	@Override
 	public void drop(PipeTransportItems pipe, EntityData data) {
 		data.item.getItemStack().stackSize = 0;
 	}
 
-	//This is called when the void pipe is connected to multiple pipes
+	// This is called when the void pipe is connected to multiple pipes
 	@Override
 	public void centerReached(PipeTransportItems pipe, EntityData data) {
 		((PipeTransportItems) transport).scheduleRemoval(data.item);
 	}
 
 	@Override
-	public void endReached(PipeTransportItems pipe, EntityData data, TileEntity tile) {}
+	public void endReached(PipeTransportItems pipe, EntityData data, TileEntity tile) {
+	}
 
 }

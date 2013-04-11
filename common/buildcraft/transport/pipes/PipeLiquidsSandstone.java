@@ -11,36 +11,40 @@ package buildcraft.transport.pipes;
 
 import net.minecraftforge.common.ForgeDirection;
 import net.minecraftforge.liquids.LiquidStack;
-import buildcraft.core.DefaultProps;
+import buildcraft.BuildCraftTransport;
+import buildcraft.api.core.IIconProvider;
 import buildcraft.transport.IPipeTransportLiquidsHook;
 import buildcraft.transport.Pipe;
+import buildcraft.transport.PipeIconProvider;
 import buildcraft.transport.PipeTransportLiquids;
 import buildcraft.transport.TileGenericPipe;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
-public class PipeLiquidsSandstone extends Pipe implements IPipeTransportLiquidsHook{
-	 public PipeLiquidsSandstone(int itemID) {
-			super(new PipeTransportLiquids(), new PipeLogicSandstone(), itemID);
-	}
-	 
-	@Override
-	public String getTextureFile() {
-		return DefaultProps.TEXTURE_BLOCKS;
-	}
-	
-	@Override
-	public int getTextureIndex(ForgeDirection direction) {
-		 return 9 * 16 + 15;
+public class PipeLiquidsSandstone extends Pipe implements IPipeTransportLiquidsHook {
+	public PipeLiquidsSandstone(int itemID) {
+		super(new PipeTransportLiquids(), new PipeLogicSandstone(), itemID);
 	}
 
+	@Override
+	@SideOnly(Side.CLIENT)
+	public IIconProvider getIconProvider() {
+		return BuildCraftTransport.instance.pipeIconProvider;
+	}
+
+	@Override
+	public int getIconIndex(ForgeDirection direction) {
+		return PipeIconProvider.PipeLiquidsSandstone;
+	}
 
 	@Override
 	public int fill(ForgeDirection from, LiquidStack resource, boolean doFill) {
 		if (container.tileBuffer == null || container.tileBuffer[from.ordinal()] == null)
 			return 0;
-		
-		if (!(container.tileBuffer[from.ordinal()].getTile() instanceof TileGenericPipe)) 
+
+		if (!(container.tileBuffer[from.ordinal()].getTile() instanceof TileGenericPipe))
 			return 0;
-		
-		return ((PipeTransportLiquids)this.transport).getTanks(ForgeDirection.UNKNOWN)[from.ordinal()].fill(resource, doFill);
+
+		return ((PipeTransportLiquids) this.transport).getTanks(ForgeDirection.UNKNOWN)[from.ordinal()].fill(resource, doFill);
 	}
 }

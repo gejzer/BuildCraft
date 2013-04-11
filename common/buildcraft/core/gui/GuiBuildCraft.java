@@ -2,9 +2,10 @@ package buildcraft.core.gui;
 
 import java.util.ArrayList;
 
-import net.minecraft.src.GuiContainer;
-import net.minecraft.src.IInventory;
-import net.minecraft.src.TileEntity;
+import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Icon;
 
 import org.lwjgl.opengl.GL11;
 
@@ -27,8 +28,9 @@ public abstract class GuiBuildCraft extends GuiContainer {
 
 		public void add(Ledger ledger) {
 			this.ledgers.add(ledger);
-			if (SessionVars.getOpenedLedger() != null && ledger.getClass().equals(SessionVars.getOpenedLedger()))
+			if (SessionVars.getOpenedLedger() != null && ledger.getClass().equals(SessionVars.getOpenedLedger())) {
 				ledger.setFullyOpen();
+			}
 		}
 
 		/**
@@ -47,8 +49,9 @@ public abstract class GuiBuildCraft extends GuiContainer {
 
 			for (int i = 0; i < ledgers.size(); i++) {
 				Ledger ledger = ledgers.get(i);
-				if (!ledger.isVisible())
+				if (!ledger.isVisible()) {
 					continue;
+				}
 
 				ledger.currentShiftX = xShift;
 				ledger.currentShiftY = yShift;
@@ -67,8 +70,9 @@ public abstract class GuiBuildCraft extends GuiContainer {
 			for (Ledger ledger : ledgers) {
 
 				ledger.update();
-				if (!ledger.isVisible())
+				if (!ledger.isVisible()) {
 					continue;
+				}
 
 				ledger.draw(xSize, xPos);
 				xPos += ledger.getHeight();
@@ -97,8 +101,9 @@ public abstract class GuiBuildCraft extends GuiContainer {
 				if (ledger != null && !ledger.handleMouseClicked(x, y, mouseButton)) {
 
 					for (Ledger other : ledgers)
-						if (other != ledger && other.isOpen())
+						if (other != ledger && other.isOpen()) {
 							other.toggleOpen();
+						}
 					ledger.toggleOpen();
 				}
 			}
@@ -130,16 +135,18 @@ public abstract class GuiBuildCraft extends GuiContainer {
 
 		public void update() {
 			// Width
-			if (open && currentWidth < maxWidth)
+			if (open && currentWidth < maxWidth) {
 				currentWidth += 4;
-			else if (!open && currentWidth > minWidth)
+			} else if (!open && currentWidth > minWidth) {
 				currentWidth -= 4;
+			}
 
 			// Height
-			if (open && currentHeight < maxHeight)
+			if (open && currentHeight < maxHeight) {
 				currentHeight += 4;
-			else if (!open && currentHeight > minHeight)
+			} else if (!open && currentHeight > minHeight) {
 				currentHeight -= 4;
+			}
 		}
 
 		public int getHeight() {
@@ -191,7 +198,6 @@ public abstract class GuiBuildCraft extends GuiContainer {
 		}
 
 		protected void drawBackground(int x, int y) {
-			int texture = mc.renderEngine.getTexture(DefaultProps.TEXTURE_PATH_GUI + "/ledger.png");
 
 			float colorR = (overlayColor >> 16 & 255) / 255.0F;
 			float colorG = (overlayColor >> 8 & 255) / 255.0F;
@@ -199,27 +205,21 @@ public abstract class GuiBuildCraft extends GuiContainer {
 
 			GL11.glColor4f(colorR, colorG, colorB, 1.0F);
 
-			mc.renderEngine.bindTexture(texture);
+            mc.renderEngine.bindTexture(DefaultProps.TEXTURE_PATH_GUI + "/ledger.png");
 			drawTexturedModalRect(x, y, 0, 256 - currentHeight, 4, currentHeight);
 			drawTexturedModalRect(x + 4, y, 256 - currentWidth + 4, 0, currentWidth - 4, 4);
 			// Add in top left corner again
 			drawTexturedModalRect(x, y, 0, 0, 4, 4);
 
-			drawTexturedModalRect(x + 4, y + 4, 256 - currentWidth + 4, 256 - currentHeight + 4, currentWidth - 4,
-					currentHeight - 4);
+			drawTexturedModalRect(x + 4, y + 4, 256 - currentWidth + 4, 256 - currentHeight + 4, currentWidth - 4, currentHeight - 4);
 
 			GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0F);
 		}
 
-		protected void drawIcon(String texture, int iconIndex, int x, int y) {
+		protected void drawIcon(Icon icon, int x, int y) {
 
 			GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0F);
-			int tex = mc.renderEngine.getTexture(texture);
-			mc.renderEngine.bindTexture(tex);
-			int textureRow = iconIndex >> 4;
-			int textureColumn = iconIndex - 16 * textureRow;
-			drawTexturedModalRect(x, y, 16 * textureColumn, 16 * textureRow, 16, 16);
-
+			drawTexturedModelRectFromIcon(x, y, icon, 16, 16);
 		}
 	}
 
@@ -228,17 +228,19 @@ public abstract class GuiBuildCraft extends GuiContainer {
 	public GuiBuildCraft(BuildCraftContainer container, IInventory inventory) {
 		super(container);
 
-		if (inventory instanceof TileEntity)
+		if (inventory instanceof TileEntity) {
 			tile = (TileEntity) inventory;
+		}
 
 		initLedgers(inventory);
 	}
 
-	protected void initLedgers(IInventory inventory) {}
+	protected void initLedgers(IInventory inventory) {
+	}
 
 	@Override
 	protected void drawGuiContainerForegroundLayer(int par1, int par2) {
-		ledgerManager.drawLedgers(mouseX, mouseY);
+		ledgerManager.drawLedgers(par1, par2);
 	}
 
 	protected int getCenteredOffset(String string) {
@@ -256,18 +258,6 @@ public abstract class GuiBuildCraft extends GuiContainer {
 
 		// / Handle ledger clicks
 		ledgerManager.handleMouseClicked(par1, par2, mouseButton);
-	}
-
-	// / MOUSE MOVEMENT
-	private int mouseX = 0;
-	private int mouseY = 0;
-
-	@Override
-	protected void mouseMovedOrUp(int i, int j, int k) {
-		super.mouseMovedOrUp(i, j, k);
-
-		mouseX = i;
-		mouseY = j;
 	}
 
 }

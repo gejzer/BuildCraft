@@ -1,8 +1,8 @@
-/** 
+/**
  * Copyright (c) SpaceToad, 2011
  * http://www.mod-buildcraft.com
- * 
- * BuildCraft is distributed under the terms of the Minecraft Mod Public 
+ *
+ * BuildCraft is distributed under the terms of the Minecraft Mod Public
  * License 1.0, or MMPL. Please check the contents of the license located in
  * http://www.mod-buildcraft.com/MMPL-1.0.txt
  */
@@ -13,28 +13,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import net.minecraft.block.Block;
+import net.minecraft.block.material.Material;
+import net.minecraft.client.renderer.texture.IconRegister;
+import net.minecraft.entity.Entity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.util.Vec3;
+import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.World;
 import buildcraft.BuildCraftCore;
-import buildcraft.core.DefaultProps;
 import buildcraft.core.IFramePipeConnection;
 import buildcraft.core.utils.Utils;
-
-import net.minecraft.src.AxisAlignedBB;
-import net.minecraft.src.Block;
-import net.minecraft.src.Entity;
-import net.minecraft.src.IBlockAccess;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.Material;
-import net.minecraft.src.MovingObjectPosition;
-import net.minecraft.src.Vec3;
-import net.minecraft.src.World;
-
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class BlockFrame extends Block implements IFramePipeConnection {
 
 	public BlockFrame(int i) {
 		super(i, Material.glass);
-
-		blockIndexInTexture = 16 * 2 + 2;
 		setHardness(0.5F);
 		setTickRandomly(true);
 	}
@@ -43,10 +41,10 @@ public class BlockFrame extends Block implements IFramePipeConnection {
 	public void updateTick(World world, int i, int j, int k, Random random) {
 		if (world.isRemote)
 			return;
-		
+
 		int meta = world.getBlockMetadata(i, j, k);
-		if (meta == 1 && random.nextInt(10) > 5){
-			world.setBlockWithNotify(i, j, k, 0);
+		if (meta == 1 && random.nextInt(10) > 5) {
+			world.setBlock(i, j, k, 0);
 		}
 	}
 
@@ -98,8 +96,7 @@ public class BlockFrame extends Block implements IFramePipeConnection {
 			zMax = 1.0F;
 		}
 
-		return AxisAlignedBB.getBoundingBox((double) i + xMin, (double) j + yMin, (double) k + zMin, (double) i + xMax,
-				(double) j + yMax, (double) k + zMax);
+		return AxisAlignedBB.getBoundingBox((double) i + xMin, (double) j + yMin, (double) k + zMin, (double) i + xMax, (double) j + yMax, (double) k + zMax);
 	}
 
 	@SuppressWarnings({ "all" })
@@ -110,38 +107,38 @@ public class BlockFrame extends Block implements IFramePipeConnection {
 
 	@SuppressWarnings("rawtypes")
 	@Override
-	public void addCollidingBlockToList(World world, int i, int j, int k, AxisAlignedBB axisalignedbb, List arraylist, Entity par7Entity) {
+	public void addCollisionBoxesToList(World world, int i, int j, int k, AxisAlignedBB axisalignedbb, List arraylist, Entity par7Entity) {
 		setBlockBounds(Utils.pipeMinPos, Utils.pipeMinPos, Utils.pipeMinPos, Utils.pipeMaxPos, Utils.pipeMaxPos, Utils.pipeMaxPos);
-		super.addCollidingBlockToList(world, i, j, k, axisalignedbb, arraylist, par7Entity);
+		super.addCollisionBoxesToList(world, i, j, k, axisalignedbb, arraylist, par7Entity);
 
 		if (Utils.checkLegacyPipesConnections(world, i, j, k, i - 1, j, k)) {
 			setBlockBounds(0.0F, Utils.pipeMinPos, Utils.pipeMinPos, Utils.pipeMaxPos, Utils.pipeMaxPos, Utils.pipeMaxPos);
-			super.addCollidingBlockToList(world, i, j, k, axisalignedbb, arraylist, par7Entity);
+			super.addCollisionBoxesToList(world, i, j, k, axisalignedbb, arraylist, par7Entity);
 		}
 
 		if (Utils.checkLegacyPipesConnections(world, i, j, k, i + 1, j, k)) {
 			setBlockBounds(Utils.pipeMinPos, Utils.pipeMinPos, Utils.pipeMinPos, 1.0F, Utils.pipeMaxPos, Utils.pipeMaxPos);
-			super.addCollidingBlockToList(world, i, j, k, axisalignedbb, arraylist, par7Entity);
+			super.addCollisionBoxesToList(world, i, j, k, axisalignedbb, arraylist, par7Entity);
 		}
 
 		if (Utils.checkLegacyPipesConnections(world, i, j, k, i, j - 1, k)) {
 			setBlockBounds(Utils.pipeMinPos, 0.0F, Utils.pipeMinPos, Utils.pipeMaxPos, Utils.pipeMaxPos, Utils.pipeMaxPos);
-			super.addCollidingBlockToList(world, i, j, k, axisalignedbb, arraylist, par7Entity);
+			super.addCollisionBoxesToList(world, i, j, k, axisalignedbb, arraylist, par7Entity);
 		}
 
 		if (Utils.checkLegacyPipesConnections(world, i, j, k, i, j + 1, k)) {
 			setBlockBounds(Utils.pipeMinPos, Utils.pipeMinPos, Utils.pipeMinPos, Utils.pipeMaxPos, 1.0F, Utils.pipeMaxPos);
-			super.addCollidingBlockToList(world, i, j, k, axisalignedbb, arraylist, par7Entity);
+			super.addCollisionBoxesToList(world, i, j, k, axisalignedbb, arraylist, par7Entity);
 		}
 
 		if (Utils.checkLegacyPipesConnections(world, i, j, k, i, j, k - 1)) {
 			setBlockBounds(Utils.pipeMinPos, Utils.pipeMinPos, 0.0F, Utils.pipeMaxPos, Utils.pipeMaxPos, Utils.pipeMaxPos);
-			super.addCollidingBlockToList(world, i, j, k, axisalignedbb, arraylist, par7Entity);
+			super.addCollisionBoxesToList(world, i, j, k, axisalignedbb, arraylist, par7Entity);
 		}
 
 		if (Utils.checkLegacyPipesConnections(world, i, j, k, i, j, k + 1)) {
 			setBlockBounds(Utils.pipeMinPos, Utils.pipeMinPos, Utils.pipeMinPos, Utils.pipeMaxPos, Utils.pipeMaxPos, 1.0F);
-			super.addCollidingBlockToList(world, i, j, k, axisalignedbb, arraylist, par7Entity);
+			super.addCollisionBoxesToList(world, i, j, k, axisalignedbb, arraylist, par7Entity);
 		}
 
 		setBlockBounds(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
@@ -189,14 +186,16 @@ public class BlockFrame extends Block implements IFramePipeConnection {
 		return blockAccess.getBlockId(x2, y2, z2) == blockID;
 	}
 
-	@Override
-	public String getTextureFile() {
-		return DefaultProps.TEXTURE_BLOCKS;
-	}
-
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public void addCreativeItems(ArrayList itemList) {
 		itemList.add(new ItemStack(this));
+	}
+
+	@Override
+	@SideOnly(Side.CLIENT)
+	public void registerIcons(IconRegister par1IconRegister)
+	{
+	    blockIcon = par1IconRegister.registerIcon("buildcraft:blockFrame");
 	}
 }

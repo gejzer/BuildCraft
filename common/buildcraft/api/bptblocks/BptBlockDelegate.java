@@ -11,13 +11,13 @@ package buildcraft.api.bptblocks;
 
 import java.util.LinkedList;
 
+import net.minecraft.item.ItemStack;
 import buildcraft.api.blueprints.BlueprintManager;
 import buildcraft.api.blueprints.BptBlock;
 import buildcraft.api.blueprints.BptSlotInfo;
 import buildcraft.api.blueprints.IBptContext;
 
-import net.minecraft.src.ItemStack;
-
+@Deprecated
 public class BptBlockDelegate extends BptBlock {
 
 	final int delegateTo;
@@ -45,11 +45,10 @@ public class BptBlockDelegate extends BptBlock {
 		BptSlotInfo newSlot = slot.clone();
 		slot.blockId = delegateTo;
 
-		if (BlueprintManager.blockBptProps[delegateTo] != null) {
+		if (BlueprintManager.blockBptProps[delegateTo] != null)
 			return BlueprintManager.blockBptProps[delegateTo].isValid(newSlot, context);
-		} else {
+		else
 			return super.isValid(newSlot, context);
-		}
 	}
 
 	@Override

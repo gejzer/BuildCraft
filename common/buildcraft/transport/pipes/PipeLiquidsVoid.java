@@ -11,27 +11,31 @@ package buildcraft.transport.pipes;
 
 import net.minecraftforge.common.ForgeDirection;
 import net.minecraftforge.liquids.LiquidStack;
-import buildcraft.core.DefaultProps;
+import buildcraft.BuildCraftTransport;
+import buildcraft.api.core.IIconProvider;
 import buildcraft.transport.IPipeTransportLiquidsHook;
 import buildcraft.transport.Pipe;
+import buildcraft.transport.PipeIconProvider;
 import buildcraft.transport.PipeTransportLiquids;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
-public class PipeLiquidsVoid extends Pipe implements IPipeTransportLiquidsHook{
+public class PipeLiquidsVoid extends Pipe implements IPipeTransportLiquidsHook {
 
 	public PipeLiquidsVoid(int itemID) {
 		super(new PipeTransportLiquids(), new PipeLogicVoid(), itemID);
 	}
-	
+
 	@Override
-	public String getTextureFile() {
-		return DefaultProps.TEXTURE_BLOCKS;
-	}
-	
-	@Override
-	public int getTextureIndex(ForgeDirection direction) {
-		return 9 * 16 + 14;
+	@SideOnly(Side.CLIENT)
+	public IIconProvider getIconProvider() {
+		return BuildCraftTransport.instance.pipeIconProvider;
 	}
 
+	@Override
+	public int getIconIndex(ForgeDirection direction) {
+		return PipeIconProvider.PipeLiquidsVoid;
+	}
 
 	@Override
 	public int fill(ForgeDirection from, LiquidStack resource, boolean doFill) {

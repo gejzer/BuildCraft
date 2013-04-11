@@ -1,9 +1,10 @@
 package buildcraft.api.bptblocks;
 
+import net.minecraft.inventory.IInventory;
 import buildcraft.api.blueprints.BptSlotInfo;
 import buildcraft.api.blueprints.IBptContext;
-import net.minecraft.src.IInventory;
 
+@Deprecated
 public class BptBlockRotateInventory extends BptBlockRotateMeta {
 
 	public BptBlockRotateInventory(int blockId, int[] rotations, boolean rotateForward) {

@@ -12,21 +12,25 @@ package buildcraft.energy;
 import java.util.List;
 import java.util.Random;
 
-import net.minecraft.src.BlockContainer;
-import net.minecraft.src.CreativeTabs;
-import net.minecraft.src.EntityPlayer;
-import net.minecraft.src.Item;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.Material;
-import net.minecraft.src.TileEntity;
-import net.minecraft.src.World;
+import net.minecraft.block.BlockContainer;
+import net.minecraft.block.material.Material;
+import net.minecraft.client.renderer.texture.IconRegister;
+import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.world.World;
+import net.minecraftforge.common.ForgeDirection;
 import buildcraft.BuildCraftCore;
 import buildcraft.BuildCraftEnergy;
-import net.minecraftforge.common.ForgeDirection;
 import buildcraft.api.tools.IToolWrench;
+import buildcraft.core.CreativeTabBuildCraft;
 import buildcraft.core.GuiIds;
 import buildcraft.core.IItemPipe;
 import buildcraft.core.proxy.CoreProxy;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class BlockEngine extends BlockContainer {
 
@@ -34,7 +38,8 @@ public class BlockEngine extends BlockContainer {
 		super(i, Material.iron);
 
 		setHardness(0.5F);
-		setCreativeTab(CreativeTabs.tabRedstone);
+		setCreativeTab(CreativeTabBuildCraft.tabBuildCraft);
+		setUnlocalizedName("engineBlock");
 	}
 
 	@Override
@@ -48,6 +53,13 @@ public class BlockEngine extends BlockContainer {
 	}
 
 	@Override
+	@SideOnly(Side.CLIENT)
+	public void registerIcons(IconRegister par1IconRegister)
+	{
+	    // NOOP
+	}
+
+	@Override
 	public int getRenderType() {
 		return BuildCraftCore.blockByEntityModel;
 	}
@@ -55,6 +67,15 @@ public class BlockEngine extends BlockContainer {
 	@Override
 	public TileEntity createNewTileEntity(World var1) {
 		return new TileEngine();
+	}
+
+	@Override
+	public boolean isBlockSolidOnSide(World world, int x, int y, int z, ForgeDirection side) {
+		TileEntity tile = world.getBlockTileEntity(x, y, z);
+		if (tile instanceof TileEngine) {
+			return ForgeDirection.getOrientation(((TileEngine) tile).orientation).getOpposite() == side;
+		}
+		return false;
 	}
 
 	@Override
@@ -92,13 +113,15 @@ public class BlockEngine extends BlockContainer {
 					return false;
 
 			if (tile.engine instanceof EngineStone) {
-				if (!CoreProxy.proxy.isRenderWorld(tile.worldObj))
+				if (!CoreProxy.proxy.isRenderWorld(tile.worldObj)) {
 					entityplayer.openGui(BuildCraftEnergy.instance, GuiIds.ENGINE_STONE, world, i, j, k);
+				}
 				return true;
 
 			} else if (tile.engine instanceof EngineIron) {
-				if (!CoreProxy.proxy.isRenderWorld(tile.worldObj))
+				if (!CoreProxy.proxy.isRenderWorld(tile.worldObj)) {
 					entityplayer.openGui(BuildCraftEnergy.instance, GuiIds.ENGINE_IRON, world, i, j, k);
+				}
 				return true;
 			}
 
@@ -108,7 +131,7 @@ public class BlockEngine extends BlockContainer {
 	}
 
 	@Override
-	public void func_85105_g(World world, int x, int y, int z, int par5) {
+	public void onPostBlockPlaced(World world, int x, int y, int z, int par5) {
 		TileEngine tile = (TileEngine) world.getBlockTileEntity(x, y, z);
 		tile.orientation = ForgeDirection.UP.ordinal();
 		tile.switchOrientation();
@@ -124,9 +147,8 @@ public class BlockEngine extends BlockContainer {
 	public void randomDisplayTick(World world, int i, int j, int k, Random random) {
 		TileEngine tile = (TileEngine) world.getBlockTileEntity(i, j, k);
 
-		if (!tile.isBurning()) {
+		if (!tile.isBurning())
 			return;
-		}
 
 		float f = (float) i + 0.5F;
 		float f1 = (float) j + 0.0F + (random.nextFloat() * 6F) / 16F;

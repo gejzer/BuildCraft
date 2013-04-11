@@ -8,17 +8,17 @@
  */
 package buildcraft.factory.gui;
 
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.inventory.ICrafting;
+import net.minecraft.inventory.Slot;
+import net.minecraft.item.ItemStack;
 import buildcraft.core.gui.BuildCraftContainer;
 import buildcraft.core.network.PacketIds;
 import buildcraft.core.network.PacketPayload;
 import buildcraft.core.network.PacketUpdate;
 import buildcraft.core.proxy.CoreProxy;
 import buildcraft.factory.TileRefinery;
-import net.minecraft.src.EntityPlayer;
-import net.minecraft.src.ICrafting;
-import net.minecraft.src.InventoryPlayer;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.Slot;
 
 public class ContainerRefinery extends BuildCraftContainer {
 
@@ -52,22 +52,23 @@ public class ContainerRefinery extends BuildCraftContainer {
 	 */
 	public void setFilter(int slot, int liquidId, int liquidMeta) {
 
-		refinery.setFilter(slot, liquidId);
+		refinery.setFilter(slot, liquidId, liquidMeta);
 
 		if (CoreProxy.proxy.isRenderWorld(refinery.worldObj)) {
 			PacketPayload payload = new PacketPayload(3, 0, 0);
 			payload.intPayload[0] = slot;
 			payload.intPayload[1] = liquidId;
 			payload.intPayload[2] = liquidMeta;
-			CoreProxy.proxy.sendToServer(new PacketUpdate(PacketIds.REFINERY_FILTER_SET, refinery.xCoord, refinery.yCoord,
-					refinery.zCoord, payload).getPacket());
+			CoreProxy.proxy.sendToServer(new PacketUpdate(PacketIds.REFINERY_FILTER_SET, refinery.xCoord, refinery.yCoord, refinery.zCoord, payload)
+					.getPacket());
 		}
 	}
 
 	public ItemStack getFilter(int slot) {
 		int liquidId = refinery.getFilter(slot);
+		int liquidMeta = refinery.getFilterMeta(slot);
 		if (liquidId > 0)
-			return new ItemStack(liquidId, 0, 0);
+			return new ItemStack(liquidId, 0, liquidMeta);
 		else
 			return null;
 	}
@@ -79,8 +80,8 @@ public class ContainerRefinery extends BuildCraftContainer {
 	}
 
 	@Override
-	public void updateCraftingResults() {
-		super.updateCraftingResults();
+	public void detectAndSendChanges() {
+		super.detectAndSendChanges();
 		for (int i = 0; i < crafters.size(); i++) {
 			refinery.sendGUINetworkData(this, (ICrafting) crafters.get(i));
 		}

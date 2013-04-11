@@ -9,18 +9,18 @@
 
 package buildcraft.factory.gui;
 
+import net.minecraft.block.Block;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.InventoryCraftResult;
+import net.minecraft.inventory.Slot;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.stats.AchievementList;
 import buildcraft.core.gui.BuildCraftContainer;
 import buildcraft.core.proxy.CoreProxy;
 import buildcraft.factory.TileAutoWorkbench;
-import net.minecraft.src.AchievementList;
-import net.minecraft.src.Block;
-import net.minecraft.src.EntityPlayer;
-import net.minecraft.src.IInventory;
-import net.minecraft.src.InventoryCraftResult;
-import net.minecraft.src.InventoryPlayer;
-import net.minecraft.src.Item;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.Slot;
 
 public class ContainerAutoWorkbench extends BuildCraftContainer {
 
@@ -50,19 +50,19 @@ public class ContainerAutoWorkbench extends BuildCraftContainer {
 			CoreProxy.proxy.onCraftingPickup(thePlayer.worldObj, thePlayer, itemstack);
 			if (itemstack.itemID == Block.workbench.blockID) {
 				thePlayer.addStat(AchievementList.buildWorkBench, 1);
-			} else if (itemstack.itemID == Item.pickaxeWood.shiftedIndex) {
+			} else if (itemstack.itemID == Item.pickaxeWood.itemID) {
 				thePlayer.addStat(AchievementList.buildPickaxe, 1);
-			} else if (itemstack.itemID == Block.stoneOvenIdle.blockID) {
+			} else if (itemstack.itemID == Block.furnaceIdle.blockID) {
 				thePlayer.addStat(AchievementList.buildFurnace, 1);
-			} else if (itemstack.itemID == Item.hoeWood.shiftedIndex) {
+			} else if (itemstack.itemID == Item.hoeWood.itemID) {
 				thePlayer.addStat(AchievementList.buildHoe, 1);
-			} else if (itemstack.itemID == Item.bread.shiftedIndex) {
+			} else if (itemstack.itemID == Item.bread.itemID) {
 				thePlayer.addStat(AchievementList.makeBread, 1);
-			} else if (itemstack.itemID == Item.cake.shiftedIndex) {
+			} else if (itemstack.itemID == Item.cake.itemID) {
 				thePlayer.addStat(AchievementList.bakeCake, 1);
-			} else if (itemstack.itemID == Item.pickaxeStone.shiftedIndex) {
+			} else if (itemstack.itemID == Item.pickaxeStone.itemID) {
 				thePlayer.addStat(AchievementList.buildBetterPickaxe, 1);
-			} else if (itemstack.itemID == Item.swordWood.shiftedIndex) {
+			} else if (itemstack.itemID == Item.swordWood.itemID) {
 				thePlayer.addStat(AchievementList.buildSword, 1);
 			} else if (itemstack.itemID == Block.enchantmentTable.blockID) {
 				thePlayer.addStat(AchievementList.enchantments, 1);
@@ -71,7 +71,7 @@ public class ContainerAutoWorkbench extends BuildCraftContainer {
 			}
 			CoreProxy.proxy.TakenFromCrafting(thePlayer, itemstack, craftMatrix);
 			// FIXME: Autocrafting table should post a forge event.
-			//ForgeHooks.onTakenFromCrafting(thePlayer, itemstack, craftMatrix);
+			// ForgeHooks.onTakenFromCrafting(thePlayer, itemstack, craftMatrix);
 
 			tile.extractItem(true, true);
 		}
@@ -106,8 +106,8 @@ public class ContainerAutoWorkbench extends BuildCraftContainer {
 	}
 
 	@Override
-	public void updateCraftingResults() {
-		super.updateCraftingResults();
+	public void detectAndSendChanges() {
+		super.detectAndSendChanges();
 		craftResult.setInventorySlotContents(0, tile.findRecipe());
 	}
 
@@ -135,20 +135,16 @@ public class ContainerAutoWorkbench extends BuildCraftContainer {
 			ItemStack itemstack1 = slot.getStack();
 			itemstack = itemstack1.copy();
 			if (i == 0) {
-				if (!mergeItemStack(itemstack1, 10, 46, true)) {
+				if (!mergeItemStack(itemstack1, 10, 46, true))
 					return null;
-				}
 			} else if (i >= 10 && i < 37) {
-				if (!mergeItemStack(itemstack1, 37, 46, false)) {
+				if (!mergeItemStack(itemstack1, 37, 46, false))
 					return null;
-				}
 			} else if (i >= 37 && i < 46) {
-				if (!mergeItemStack(itemstack1, 10, 37, false)) {
+				if (!mergeItemStack(itemstack1, 10, 37, false))
 					return null;
-				}
-			} else if (!mergeItemStack(itemstack1, 10, 46, false)) {
+			} else if (!mergeItemStack(itemstack1, 10, 46, false))
 				return null;
-			}
 			if (itemstack1.stackSize == 0) {
 				slot.putStack(null);
 			} else {
@@ -156,9 +152,8 @@ public class ContainerAutoWorkbench extends BuildCraftContainer {
 			}
 			if (itemstack1.stackSize != itemstack.stackSize) {
 				slot.onPickupFromSlot(pl, itemstack1);
-			} else {
+			} else
 				return null;
-			}
 		}
 		return itemstack;
 	}

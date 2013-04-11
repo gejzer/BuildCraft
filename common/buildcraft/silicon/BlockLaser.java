@@ -11,23 +11,27 @@ package buildcraft.silicon;
 
 import java.util.ArrayList;
 
+import net.minecraft.block.BlockContainer;
+import net.minecraft.block.material.Material;
+import net.minecraft.client.renderer.texture.IconRegister;
+import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Icon;
+import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeDirection;
-import buildcraft.core.DefaultProps;
-
-import net.minecraft.src.BlockContainer;
-import net.minecraft.src.CreativeTabs;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.Material;
-import net.minecraft.src.TileEntity;
-import net.minecraft.src.World;
-
+import buildcraft.core.CreativeTabBuildCraft;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public class BlockLaser extends BlockContainer {
+
+    @SideOnly(Side.CLIENT)
+    private Icon textureTop, textureBottom, textureSide;
 
 	public BlockLaser(int i) {
 		super(i, Material.iron);
 		setHardness(0.5F);
-		setCreativeTab(CreativeTabs.tabRedstone);
+		setCreativeTab(CreativeTabBuildCraft.tabBuildCraft);
 	}
 
 	@Override
@@ -55,36 +59,39 @@ public class BlockLaser extends BlockContainer {
 	}
 
 	@Override
-	public String getTextureFile() {
-		return DefaultProps.TEXTURE_BLOCKS;
-	}
-
-	@Override
-	public int getBlockTextureFromSideAndMetadata(int i, int j) {
-		if (i == ForgeDirection.values()[j].getOpposite().ordinal()) {
-			return 16 * 2 + 15;
-		} else if (i == j) {
-			return 16 * 2 + 14;
-		} else {
-			return 16 * 2 + 13;
-		}
+	public Icon getIcon(int i, int j) {
+		if (i == ForgeDirection.values()[j].getOpposite().ordinal())
+			return textureBottom;
+		else if (i == j)
+			return textureTop;
+		else
+			return textureSide;
 
 	}
 
-
 	@Override
-	public void func_85105_g(World world, int x, int y, int z, int par5) {
-		super.func_85105_g(world, x, y, z, par5);
-		int i1 = world.getBlockMetadata(x, y, z);
-		if (par5 <= 6) {
-			i1 = par5;
+	public int onBlockPlaced(World world, int x, int y, int z, int side, float par6, float par7, float par8, int meta) {
+		super.onBlockPlaced(world, x, y, z, side, par6, par7, par8, meta);
+
+		if (side <= 6) {
+			meta = side;
 		}
-		world.setBlockMetadataWithNotify(x, y, z, i1);
+
+		return meta;
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public void addCreativeItems(ArrayList itemList) {
 		itemList.add(new ItemStack(this));
+	}
+
+	@Override
+	@SideOnly(Side.CLIENT)
+	public void registerIcons(IconRegister par1IconRegister)
+	{
+	    textureTop = par1IconRegister.registerIcon("buildcraft:laser_top");
+        textureBottom = par1IconRegister.registerIcon("buildcraft:laser_bottom");
+        textureSide = par1IconRegister.registerIcon("buildcraft:laser_side");
 	}
 }

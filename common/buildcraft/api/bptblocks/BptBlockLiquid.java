@@ -1,8 +1,8 @@
-/** 
+/**
  * Copyright (c) SpaceToad, 2011
  * http://www.mod-buildcraft.com
- * 
- * BuildCraft is distributed under the terms of the Minecraft Mod Public 
+ *
+ * BuildCraft is distributed under the terms of the Minecraft Mod Public
  * License 1.0, or MMPL. Please check the contents of the license located in
  * http://www.mod-buildcraft.com/MMPL-1.0.txt
  */
@@ -11,12 +11,12 @@ package buildcraft.api.bptblocks;
 
 import java.util.LinkedList;
 
+import net.minecraft.item.ItemStack;
 import buildcraft.api.blueprints.BptBlock;
 import buildcraft.api.blueprints.BptSlotInfo;
 import buildcraft.api.blueprints.IBptContext;
 
-import net.minecraft.src.ItemStack;
-
+@Deprecated
 public class BptBlockLiquid extends BptBlock {
 
 	private final ItemStack bucketStack;
@@ -36,12 +36,10 @@ public class BptBlockLiquid extends BptBlock {
 
 	@Override
 	public boolean isValid(BptSlotInfo slot, IBptContext context) {
-		if (slot.meta == 0) {
-			return slot.blockId == context.world().getBlockId(slot.x, slot.y, slot.z)
-					&& context.world().getBlockMetadata(slot.x, slot.y, slot.z) == 0;
-		} else {
+		if (slot.meta == 0)
+			return slot.blockId == context.world().getBlockId(slot.x, slot.y, slot.z) && context.world().getBlockMetadata(slot.x, slot.y, slot.z) == 0;
+		else
 			return true;
-		}
 	}
 
 	@Override
@@ -57,7 +55,7 @@ public class BptBlockLiquid extends BptBlock {
 	@Override
 	public void buildBlock(BptSlotInfo slot, IBptContext context) {
 		if (slot.meta == 0) {
-			context.world().setBlockAndMetadataWithNotify(slot.x, slot.y, slot.z, slot.blockId, 0);
+			context.world().setBlock(slot.x, slot.y, slot.z, slot.blockId, 0,1);
 		}
 	}
 

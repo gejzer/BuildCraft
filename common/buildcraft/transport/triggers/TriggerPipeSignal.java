@@ -10,13 +10,13 @@
 package buildcraft.transport.triggers;
 
 import buildcraft.api.gates.ITriggerParameter;
-import buildcraft.api.gates.Trigger;
 import buildcraft.api.transport.IPipe;
-import buildcraft.core.DefaultProps;
+import buildcraft.core.triggers.ActionTriggerIconProvider;
+import buildcraft.core.triggers.BCTrigger;
 import buildcraft.transport.ITriggerPipe;
 import buildcraft.transport.Pipe;
 
-public class TriggerPipeSignal extends Trigger implements ITriggerPipe {
+public class TriggerPipeSignal extends BCTrigger implements ITriggerPipe {
 
 	boolean active;
 	IPipe.WireColor color;
@@ -29,41 +29,13 @@ public class TriggerPipeSignal extends Trigger implements ITriggerPipe {
 	}
 
 	@Override
-	public int getIndexInTexture() {
-		if (active)
-			switch (color) {
-			case Red:
-				return 0 * 16 + 3;
-			case Blue:
-				return 0 * 16 + 5;
-			case Green:
-				return 0 * 16 + 7;
-			case Yellow:
-				return 0 * 16 + 9;
-			}
-		else
-			switch (color) {
-			case Red:
-				return 0 * 16 + 2;
-			case Blue:
-				return 0 * 16 + 4;
-			case Green:
-				return 0 * 16 + 6;
-			case Yellow:
-				return 0 * 16 + 8;
-			}
-
-		return 0;
-	}
-
-	@Override
 	public boolean hasParameter() {
 		return false;
 	}
 
 	@Override
 	public String getDescription() {
-		if (active)
+		if (active) {
 			switch (color) {
 			case Red:
 				return "Red Pipe Signal On";
@@ -74,7 +46,7 @@ public class TriggerPipeSignal extends Trigger implements ITriggerPipe {
 			case Yellow:
 				return "Yellow Pipe Signal On";
 			}
-		else
+		} else {
 			switch (color) {
 			case Red:
 				return "Red Pipe Signal Off";
@@ -85,6 +57,7 @@ public class TriggerPipeSignal extends Trigger implements ITriggerPipe {
 			case Yellow:
 				return "Yellow Pipe Signal Off";
 			}
+		}
 
 		return "";
 	}
@@ -96,9 +69,32 @@ public class TriggerPipeSignal extends Trigger implements ITriggerPipe {
 		else
 			return pipe.signalStrength[color.ordinal()] == 0;
 	}
-
+	
 	@Override
-	public String getTextureFile() {
-		return DefaultProps.TEXTURE_TRIGGERS;
+	public int getIconIndex() {
+		if (active) {
+			switch (color) {
+			case Red:
+				return ActionTriggerIconProvider.Trigger_PipeSignal_Red_Active;
+			case Blue:
+				return ActionTriggerIconProvider.Trigger_PipeSignal_Blue_Active;
+			case Green:
+				return ActionTriggerIconProvider.Trigger_PipeSignal_Green_Active;
+			case Yellow:
+				return ActionTriggerIconProvider.Trigger_PipeSignal_Yellow_Active;
+			}
+		} else {
+			switch (color) {
+			case Red:
+				return ActionTriggerIconProvider.Trigger_PipeSignal_Red_Inactive;
+			case Blue:
+				return ActionTriggerIconProvider.Trigger_PipeSignal_Blue_Inactive;
+			case Green:
+				return ActionTriggerIconProvider.Trigger_PipeSignal_Green_Inactive;
+			case Yellow:
+				return ActionTriggerIconProvider.Trigger_PipeSignal_Yellow_Inactive;
+			}
+		}
+		return -1;
 	}
 }

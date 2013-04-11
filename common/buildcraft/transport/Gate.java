@@ -2,15 +2,14 @@ package buildcraft.transport;
 
 import java.util.LinkedList;
 
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.World;
 import buildcraft.BuildCraftTransport;
 import buildcraft.api.gates.IAction;
 import buildcraft.api.gates.ITrigger;
 import buildcraft.core.network.PacketPayload;
-
-import net.minecraft.src.EntityPlayer;
-import net.minecraft.src.ItemStack;
-import net.minecraft.src.NBTTagCompound;
-import net.minecraft.src.World;
 
 public abstract class Gate {
 
@@ -91,19 +90,18 @@ public abstract class Gate {
 
 	public abstract void startResolution();
 
-	public abstract boolean resolveAction(IAction action);
+	public abstract boolean resolveAction(IAction action, int count);
 
 	// / TRIGGERS
 	public abstract void addTrigger(LinkedList<ITrigger> list);
 
 	// / TEXTURES
-	public abstract int getTexture(boolean isSignalActive);
+	public abstract int getTextureIconIndex(boolean isSignalActive);
 
 	public abstract String getGuiFile();
 
 	public static boolean isGateItem(ItemStack stack) {
-		return stack.itemID == BuildCraftTransport.pipeGate.shiftedIndex
-				|| stack.itemID == BuildCraftTransport.pipeGateAutarchic.shiftedIndex;
+		return stack.itemID == BuildCraftTransport.pipeGate.itemID || stack.itemID == BuildCraftTransport.pipeGateAutarchic.itemID;
 	}
 
 }

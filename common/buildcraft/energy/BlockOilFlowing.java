@@ -11,16 +11,18 @@ package buildcraft.energy;
 
 import java.util.Random;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockFluid;
+import net.minecraft.block.material.Material;
+import net.minecraft.client.renderer.texture.IconRegister;
+import net.minecraft.util.Icon;
+import net.minecraft.world.World;
+import net.minecraftforge.liquids.ILiquid;
 import buildcraft.BuildCraftCore;
 import buildcraft.BuildCraftEnergy;
-import buildcraft.core.DefaultProps;
-
-import net.minecraft.src.Block;
-import net.minecraft.src.BlockFluid;
-import net.minecraft.src.Material;
-import net.minecraft.src.World;
-import net.minecraftforge.liquids.ILiquid;
-
 
 public class BlockOilFlowing extends BlockFluid implements ILiquid {
 
@@ -40,16 +42,11 @@ public class BlockOilFlowing extends BlockFluid implements ILiquid {
 		return BuildCraftCore.oilModel;
 	}
 
-	@Override
-	public String getTextureFile() {
-		return DefaultProps.TEXTURE_BLOCKS;
-	}
-
 	private void updateFlow(World world, int i, int j, int k) {
 		int l = world.getBlockMetadata(i, j, k);
-		world.setBlockAndMetadata(i, j, k, blockID + 1, l);
-		world.markBlocksDirty(i, j, k, i, j, k);
-		world.markBlockNeedsUpdate(i, j, k);
+		world.setBlock(i, j, k, blockID + 1, l, 1);
+		world.markBlockRangeForRenderUpdate(i, j, k, i, j, k);
+		world.markBlockForUpdate(i, j, k);
 	}
 
 	@Override
@@ -79,10 +76,10 @@ public class BlockOilFlowing extends BlockFluid implements ILiquid {
 			if (j1 != l) {
 				l = j1;
 				if (l < 0) {
-					world.setBlockWithNotify(i, j, k, 0);
+					world.setBlock(i, j, k, 0);
 				} else {
-					world.setBlockMetadataWithNotify(i, j, k, l);
-					world.scheduleBlockUpdate(i, j, k, blockID, tickRate());
+					world.setBlockMetadataWithNotify(i, j, k, l,1);
+					world.scheduleBlockUpdate(i, j, k, blockID, tickRate(world));
 					world.notifyBlocksOfNeighborChange(i, j, k, blockID);
 				}
 			} else if (flag) {
@@ -93,9 +90,9 @@ public class BlockOilFlowing extends BlockFluid implements ILiquid {
 		}
 		if (liquidCanDisplaceBlock(world, i, j - 1, k)) {
 			if (l >= 8) {
-				world.setBlockAndMetadataWithNotify(i, j - 1, k, blockID, l);
+				world.setBlock(i, j - 1, k, blockID, l,1);
 			} else {
-				world.setBlockAndMetadataWithNotify(i, j - 1, k, blockID, l + 8);
+				world.setBlock(i, j - 1, k, blockID, l + 8,1);
 			}
 		} else if (l >= 0 && (l == 0 || blockBlocksFlow(world, i, j - 1, k))) {
 			boolean aflag[] = getOptimalFlowDirections(world, i, j, k);
@@ -103,9 +100,8 @@ public class BlockOilFlowing extends BlockFluid implements ILiquid {
 			if (l >= 8) {
 				k1 = 1;
 			}
-			if (k1 >= 8) {
+			if (k1 >= 8)
 				return;
-			}
 			if (aflag[0]) {
 				flowIntoBlock(world, i - 1, j, k, k1);
 			}
@@ -127,7 +123,7 @@ public class BlockOilFlowing extends BlockFluid implements ILiquid {
 			if (i1 > 0) {
 				Block.blocksList[i1].dropBlockAsItem(world, i, j, k, world.getBlockMetadata(i, j, k), 0);
 			}
-			world.setBlockAndMetadataWithNotify(i, j, k, blockID, l);
+			world.setBlock(i, j, k, blockID, l,1);
 		}
 	}
 
@@ -152,13 +148,11 @@ public class BlockOilFlowing extends BlockFluid implements ILiquid {
 			if (k1 == 3) {
 				j2++;
 			}
-			if (blockBlocksFlow(world, l1, i2, j2) || world.getBlockMaterial(l1, i2, j2) == blockMaterial
-					&& world.getBlockMetadata(l1, i2, j2) == 0) {
+			if (blockBlocksFlow(world, l1, i2, j2) || world.getBlockMaterial(l1, i2, j2) == blockMaterial && world.getBlockMetadata(l1, i2, j2) == 0) {
 				continue;
 			}
-			if (!blockBlocksFlow(world, l1, i2 - 1, j2)) {
+			if (!blockBlocksFlow(world, l1, i2 - 1, j2))
 				return l;
-			}
 			if (l >= 4) {
 				continue;
 			}
@@ -189,8 +183,7 @@ public class BlockOilFlowing extends BlockFluid implements ILiquid {
 			if (l == 3) {
 				j2++;
 			}
-			if (blockBlocksFlow(world, j1, i2, j2) || world.getBlockMaterial(j1, i2, j2) == blockMaterial
-					&& world.getBlockMetadata(j1, i2, j2) == 0) {
+			if (blockBlocksFlow(world, j1, i2, j2) || world.getBlockMaterial(j1, i2, j2) == blockMaterial && world.getBlockMetadata(j1, i2, j2) == 0) {
 				continue;
 			}
 			if (!blockBlocksFlow(world, j1, i2 - 1, j2)) {
@@ -216,22 +209,18 @@ public class BlockOilFlowing extends BlockFluid implements ILiquid {
 
 	private boolean blockBlocksFlow(World world, int i, int j, int k) {
 		int l = world.getBlockId(i, j, k);
-		if (l == Block.doorWood.blockID || l == Block.doorSteel.blockID || l == Block.signPost.blockID
-				|| l == Block.ladder.blockID || l == Block.reed.blockID) {
+		if (l == Block.doorWood.blockID || l == Block.doorIron.blockID || l == Block.signPost.blockID || l == Block.ladder.blockID || l == Block.reed.blockID)
 			return true;
-		}
-		if (l == 0) {
+		if (l == 0)
 			return false;
-		}
 		Material material = Block.blocksList[l].blockMaterial;
 		return material.isSolid();
 	}
 
 	protected int getSmallestFlowDecay(World world, int i, int j, int k, int l) {
 		int i1 = getFlowDecay(world, i, j, k);
-		if (i1 < 0) {
+		if (i1 < 0)
 			return l;
-		}
 		if (i1 >= 8) {
 			i1 = 0;
 		}
@@ -240,18 +229,17 @@ public class BlockOilFlowing extends BlockFluid implements ILiquid {
 
 	private boolean liquidCanDisplaceBlock(World world, int i, int j, int k) {
 		Material material = world.getBlockMaterial(i, j, k);
-		if (material == blockMaterial) {
+		if (material == blockMaterial)
 			return false;
-		} else {
+		else
 			return !blockBlocksFlow(world, i, j, k);
-		}
 	}
 
 	@Override
 	public void onBlockAdded(World world, int i, int j, int k) {
 		super.onBlockAdded(world, i, j, k);
 		if (world.getBlockId(i, j, k) == blockID) {
-			world.scheduleBlockUpdate(i, j, k, blockID, tickRate());
+			world.scheduleBlockUpdate(i, j, k, blockID, tickRate(world));
 		}
 	}
 
@@ -273,6 +261,12 @@ public class BlockOilFlowing extends BlockFluid implements ILiquid {
 	@Override
 	public boolean isBlockReplaceable(World world, int i, int j, int k) {
 		return true;
+	}
+
+	@Override
+    	@SideOnly(Side.CLIENT)
+	public void registerIcons(IconRegister iconRegister){
+		this.theIcon = new Icon[] {iconRegister.registerIcon("buildcraft:oil"), iconRegister.registerIcon("buildcraft:oil_flow")};
 	}
 
 }
