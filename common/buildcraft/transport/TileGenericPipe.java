@@ -14,7 +14,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.LinkedList;
 
-import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.packet.Packet;
@@ -241,10 +240,7 @@ public class TileGenericPipe extends TileEntity implements IPowerReceptor, ITank
 		// Facades
 		for (ForgeDirection direction : ForgeDirection.VALID_DIRECTIONS) {
 			int blockId = this.facadeBlocks[direction.ordinal()];
-			renderState.facadeMatrix.setConnected(direction, blockId != 0 && Block.blocksList[blockId] != null);
-			if (Block.blocksList[blockId] != null) {
-				renderState.facadeMatrix.setFacade(direction, blockId, this.facadeMeta[direction.ordinal()]);
-			}
+			renderState.facadeMatrix.setFacade(direction, blockId, this.facadeMeta[direction.ordinal()]);
 		}
 
 		if (renderState.isDirty()) {
@@ -453,25 +449,30 @@ public class TileGenericPipe extends TileEntity implements IPowerReceptor, ITank
 			return null;
 	}
 
-	public boolean isPipeConnected(TileEntity with, ForgeDirection side) {
+	/**
+	 * Checks if this tile is connected to another tile
+	 * @param with - The other Tile
+	 * @param side - The orientation to get to the other tile ('with')
+	 * @return true if pipes are considered connected
+	 */
+	
+	private boolean arePipesConnected(TileEntity with, ForgeDirection side) {
 		Pipe pipe1 = pipe;
-		Pipe pipe2 = null;
-
-		if (with instanceof TileGenericPipe) {
-			pipe2 = ((TileGenericPipe) with).pipe;
-		}
 
 		if (!BlockGenericPipe.isValid(pipe1))
 			return false;
 
-		if (BlockGenericPipe.isValid(pipe2) && !pipe1.transport.getClass().isAssignableFrom(pipe2.transport.getClass())
-				&& !pipe1.transport.allowsConnect(pipe2.transport))
-			return false;
+		if (with instanceof TileGenericPipe) {
+			Pipe pipe2 = ((TileGenericPipe) with).pipe;
 
-		if (pipe2 != null && !(pipe2.isPipeConnected(this, side)))
-			return false;
+			if (!BlockGenericPipe.isValid(pipe2))
+				return false;
 
-		return pipe1 != null ? pipe1.isPipeConnected(with, side) : false;
+			if (!pipe2.canPipeConnect(this, side.getOpposite()))
+				return false;
+		}
+
+		return pipe1 != null ? pipe1.canPipeConnect(with, side) : false;
 	}
 
 	private void computeConnections() {
@@ -483,12 +484,7 @@ public class TileGenericPipe extends TileEntity implements IPowerReceptor, ITank
 				t.refresh();
 
 				if (t.getTile() != null) {
-					pipeConnectionsBuffer[i] = isPipeConnected(t.getTile(), ForgeDirection.VALID_DIRECTIONS[i].getOpposite());
-
-					if (t.getTile() instanceof TileGenericPipe) {
-						TileGenericPipe pipe = (TileGenericPipe) t.getTile();
-						pipe.pipeConnectionsBuffer[ForgeDirection.VALID_DIRECTIONS[i].getOpposite().ordinal()] = pipeConnectionsBuffer[i];
-					}
+					pipeConnectionsBuffer[i] = arePipesConnected(t.getTile(), ForgeDirection.VALID_DIRECTIONS[i]);
 				}
 			}
 		}
@@ -579,7 +575,7 @@ public class TileGenericPipe extends TileEntity implements IPowerReceptor, ITank
 
 	public boolean hasFacade(ForgeDirection direction) {
 		if (this.worldObj.isRemote)
-			return renderState.facadeMatrix.isConnected(direction);
+			return renderState.facadeMatrix.getFacadeBlockId(direction) != 0;
 		return (this.facadeBlocks[direction.ordinal()] != 0);
 	}
 	
